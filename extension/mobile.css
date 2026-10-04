@@ -6,19 +6,40 @@ guac-osk {
     display: none !important;
 }
 
-/* Ensure text-input container is compact, transparent, and non-intrusive */
-.text-input-container {
+/* Text-input container is completely disabled & hidden until explicitly activated */
+.text-input-container,
+body:not(.keyboard-active) .text-input-container,
+body:not(.keyboard-active) .text-input,
+body:not(.keyboard-active) .text-input-field,
+body:not(.keyboard-active) textarea.target,
+body:not(.keyboard-active) .text-input textarea {
+    display: none !important;
     position: fixed !important;
-    bottom: 46px !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 1px !important;
-    overflow: visible !important;
+    bottom: -9999px !important;
+    left: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    z-index: -9999 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    pointer-events: none !important;
+}
+
+body.keyboard-active .text-input-container {
+    display: block !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    position: fixed !important;
+    bottom: 46px !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 1px !important;
     z-index: 99998 !important;
+    opacity: 1 !important;
 }
 
 .text-input-container .text-input {
@@ -38,12 +59,15 @@ guac-osk {
     display: none !important;
 }
 
-/* Make target textarea capture focus transparently */
-.text-input-container textarea.target {
-    opacity: 0.01 !important;
+/* Make target textarea capture focus transparently ONLY when keyboard is active */
+body.keyboard-active .text-input-container textarea.target,
+body.keyboard-active .text-input textarea {
+    display: block !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 0.001 !important;
     height: 1px !important;
     width: 1px !important;
-    pointer-events: auto !important;
     position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
@@ -149,11 +173,12 @@ guac-osk {
     max-width: calc(100vw - 20px);
 }
 
-/* Minimized Dynamic Island Capsule */
+/* Minimized Dynamic Island PowerIcon Capsule */
 #guac-mobile-pill.minimized {
-    padding: 0 14px;
+    padding: 0 12px;
     border-radius: 9999px;
-    width: 78px;
+    width: auto;
+    min-width: 86px;
     height: 38px;
     justify-content: center;
     background: rgba(15, 23, 42, 0.94);
@@ -161,11 +186,13 @@ guac-osk {
     border: 1px solid rgba(56, 189, 248, 0.55);
     cursor: grab;
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #guac-mobile-pill.minimized:active {
-    transform: scale(0.93);
     cursor: grabbing;
+    transform: scale(0.96);
 }
 
 #guac-mobile-pill.minimized .pill-content,
@@ -178,12 +205,14 @@ guac-osk {
     display: none;
     align-items: center;
     justify-content: center;
-    gap: 7px;
+    gap: 6px;
     font-size: 13px;
     font-weight: 700;
     color: #38bdf8;
     line-height: 1;
     cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #guac-mobile-pill.minimized .pill-mini-badge {
@@ -191,15 +220,23 @@ guac-osk {
 }
 
 .pill-mini-icon {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1;
+    color: #38bdf8;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+}
+
+.pill-mini-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+    letter-spacing: 0.5px;
 }
 
 .pill-mini-expand {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
     font-weight: 800;
-    transition: transform 0.15s ease;
 }
 
 .pill-live-dot {

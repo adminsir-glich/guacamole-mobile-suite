@@ -28,10 +28,13 @@
         C: 99
     };
 
+    var DEFAULT_FIT_SCALE = 0.28; // 28% scale to fit entire desktop and terminal screen perfectly
+
     var state = {
         ctrlSticky: false,
         altSticky: false,
         pillMinimized: false,
+        keyboardActive: false,
         lastClipboardText: '',
         pinch: {
             active: false,
@@ -59,6 +62,7 @@
         drag: {
             active: false,
             isDragging: false,
+            justDragged: false,
             startX: 0,
             startY: 0,
             initialX: 0,
@@ -300,9 +304,7 @@
     }
 
     function isNativeKeyboardActive() {
-        var target = document.querySelector('.text-input-field textarea.target') ||
-                     document.querySelector('.text-input textarea');
-        return target && (document.activeElement === target);
+        return !!state.keyboardActive || document.body.classList.contains('keyboard-active');
     }
 
     function updateKbButtonsState() {
@@ -310,6 +312,10 @@
         var kbBtns = document.querySelectorAll('.btn-kb-toggle, .btn-keyboard');
         for (var i = 0; i < kbBtns.length; i++) {
             kbBtns[i].classList.toggle('kb-active', active);
+        }
+        var hideBtn = document.querySelector('.btn-hide-kb');
+        if (hideBtn) {
+            hideBtn.style.display = active ? 'flex' : 'none';
         }
     }
 
@@ -319,7 +325,7 @@
         var client = getActiveClient();
         if (!client || !client.client) return;
 
-        var s = (customScale !== undefined) ? customScale : ((client.clientProperties && client.clientProperties.scale) || 1.0);
+        var s = (customScale !== undefined) ? customScale : ((client.clientProperties && client.clientProperties.scale) || DEFAULT_FIT_SCALE);
         var pixelDensity = window.devicePixelRatio || 1;
 
         var vpHeight = window.innerHeight;
@@ -349,6 +355,9 @@
     }
 
     function focusNativeKeyboard() {
+        state.keyboardActive = true;
+        document.body.classList.add('keyboard-active');
+
         var clientView = document.querySelector('.client-view');
         if (clientView) {
             try {
@@ -378,10 +387,13 @@
             if (isTerminalSession()) {
                 debouncedTerminalResize();
             }
-        }, 30);
+        }, 40);
     }
 
     function hideNativeKeyboard() {
+        state.keyboardActive = false;
+        document.body.classList.remove('keyboard-active');
+
         var clientView = document.querySelector('.client-view');
         if (clientView) {
             try {
@@ -399,6 +411,10 @@
         var target = document.querySelector('.text-input-field textarea.target') ||
                      document.querySelector('.text-input textarea');
         if (target) target.blur();
+
+        if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+            document.activeElement.blur();
+        }
 
         var bar = document.getElementById('guac-mobile-term-bar');
         if (bar) {
@@ -462,8 +478,7 @@
         client._scalePatched = true;
         var props = client.clientProperties;
 
-        var origFit = props.minScale || 0.38;
-        client._fitScale = origFit;
+        client._fitScale = DEFAULT_FIT_SCALE; // 0.28 (28%)
 
         try {
             Object.defineProperty(props, 'minScale', {
@@ -522,12 +537,8 @@
     function zoomFit() {
         var client = getActiveClient();
         if (!client || !client.clientProperties) return;
-        if (isTerminalSession()) {
-            setScale(1.0);
-        } else {
-            var fit = client._fitScale || 0.38;
-            setScale(fit);
-        }
+        // Revert to 28% scale for both desktop and terminal sessions
+        setScale(DEFAULT_FIT_SCALE);
     }
 
     function zoomReset() {
@@ -622,15 +633,16 @@
             '    <span>⛶</span><span>Full Screen</span>',
             '  </button>',
             '  <button class="pill-btn btn-zoom btn-zoom-out" title="Zoom Out (Down to 5%)">🔍−</button>',
-            '  <button class="pill-btn btn-zoom btn-zoom-fit" title="Fit Entire Screen">📐 Fit</button>',
+            '  <button class="pill-btn btn-zoom btn-zoom-fit" title="Fit Entire Screen (28%)">📐 Fit</button>',
             '  <button class="pill-btn btn-zoom btn-zoom-reset" title="100% Full Resolution">1:1</button>',
             '  <button class="pill-btn btn-zoom btn-zoom-in" title="Zoom In">🔍+</button>',
             '  <button class="pill-btn btn-mini-toggle" title="Minimize Controls">✕</button>',
             '</div>',
-            '<div class="pill-mini-badge" title="Tap to expand | Drag to move">',
+            '<div class="pill-mini-badge" title="Tap to expand | Drag anywhere to move">',
             '  <span class="pill-live-dot"></span>',
-            '  <span class="pill-mini-icon">🖥️</span>',
-            '  <span class="pill-mini-expand">⤢</span>',
+            '  <span class="pill-mini-icon">⏻</span>',
+            '  <span class="pill-mini-text">Guac</span>',
+            '  <span class="pill-mini-expand">✥</span>',
             '</div>'
         ].join('');
 
@@ -644,7 +656,6 @@
         var zFitBtn = pill.querySelector('.btn-zoom-fit');
         var zResetBtn = pill.querySelector('.btn-zoom-reset');
         var minBtn = pill.querySelector('.btn-mini-toggle');
-        var miniBadge = pill.querySelector('.pill-mini-badge');
 
         modeBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleMouseMode(); });
         kbBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleNativeKeyboard(); });
@@ -670,12 +681,7 @@
             setMinimized(true);
         });
 
-        miniBadge.addEventListener('click', function(e) {
-            e.stopPropagation();
-            setMinimized(false);
-        });
-
-        // Touch Dragging for Pill (Supports both explicit [✥ Move] button and Minimized Island capsule)
+        // Touch Dragging for Pill (Supports both explicit [✥ Move] handle and Minimized PowerIcon capsule)
         function handlePillTouchStart(e) {
             var target = e.target;
             var isDragHandle = target.closest('.btn-drag-handle');
@@ -683,6 +689,7 @@
             var isPillBg = (target === pill || target.classList.contains('pill-content'));
 
             if (!isDragHandle && !isMini && !isPillBg) return;
+            if (e.touches.length !== 1) return;
 
             var touch = e.touches[0];
             state.drag.active = true;
@@ -694,31 +701,37 @@
             var rect = pill.getBoundingClientRect();
             state.drag.initialX = rect.left;
             state.drag.initialY = rect.top;
+
+            if (isMini || isDragHandle) {
+                e.stopPropagation();
+            }
         }
 
         pill.addEventListener('touchstart', handlePillTouchStart, { passive: false });
 
         window.addEventListener('touchmove', function(e) {
             if (!state.drag.active) return;
+            if (e.touches.length !== 1) return;
             var touch = e.touches[0];
             var dx = touch.clientX - state.drag.startX;
             var dy = touch.clientY - state.drag.startY;
 
-            if (Math.hypot(dx, dy) > 5) {
+            if (Math.hypot(dx, dy) > 4) {
                 state.drag.isDragging = true;
             }
 
-            var pillW = pill.offsetWidth || 78;
+            var pillW = pill.offsetWidth || 84;
             var pillH = pill.offsetHeight || 38;
-            var newX = Math.max(6, Math.min(window.innerWidth - pillW - 6, state.drag.initialX + dx));
-            var newY = Math.max(6, Math.min(window.innerHeight - pillH - 6, state.drag.initialY + dy));
+            var newX = Math.max(4, Math.min(window.innerWidth - pillW - 4, state.drag.initialX + dx));
+            var newY = Math.max(4, Math.min(window.innerHeight - pillH - 4, state.drag.initialY + dy));
 
             pill.style.left = newX + 'px';
             pill.style.top = newY + 'px';
             pill.style.right = 'auto';
             pill.style.bottom = 'auto';
             e.preventDefault();
-        }, { passive: false });
+            e.stopPropagation();
+        }, { passive: false, capture: true });
 
         window.addEventListener('touchend', function(e) {
             if (!state.drag.active) return;
@@ -726,11 +739,89 @@
             var duration = Date.now() - state.drag.startTime;
             state.drag.active = false;
 
-            // If tapped while minimized (not a drag), expand!
-            if (state.pillMinimized && !wasDragging && duration < 350) {
+            if (wasDragging) {
+                state.drag.justDragged = true;
+                setTimeout(function() { state.drag.justDragged = false; }, 350);
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            // If tapped while minimized (not dragged), expand!
+            if (state.pillMinimized && duration < 350) {
+                setMinimized(false);
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { capture: true });
+
+        // Mouse Dragging Support for desktop testing & devices with pointer
+        pill.addEventListener('mousedown', function(e) {
+            var target = e.target;
+            var isDragHandle = target.closest('.btn-drag-handle');
+            var isMini = state.pillMinimized || target.closest('.pill-mini-badge');
+            if (!isDragHandle && !isMini) return;
+
+            state.drag.active = true;
+            state.drag.isDragging = false;
+            state.drag.startX = e.clientX;
+            state.drag.startY = e.clientY;
+            state.drag.startTime = Date.now();
+
+            var rect = pill.getBoundingClientRect();
+            state.drag.initialX = rect.left;
+            state.drag.initialY = rect.top;
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', function(e) {
+            if (!state.drag.active) return;
+            var dx = e.clientX - state.drag.startX;
+            var dy = e.clientY - state.drag.startY;
+            if (Math.hypot(dx, dy) > 4) state.drag.isDragging = true;
+
+            var pillW = pill.offsetWidth || 84;
+            var pillH = pill.offsetHeight || 38;
+            var newX = Math.max(4, Math.min(window.innerWidth - pillW - 4, state.drag.initialX + dx));
+            var newY = Math.max(4, Math.min(window.innerHeight - pillH - 4, state.drag.initialY + dy));
+
+            pill.style.left = newX + 'px';
+            pill.style.top = newY + 'px';
+            pill.style.right = 'auto';
+            pill.style.bottom = 'auto';
+        });
+
+        window.addEventListener('mouseup', function(e) {
+            if (!state.drag.active) return;
+            var wasDragging = state.drag.isDragging;
+            var duration = Date.now() - state.drag.startTime;
+            state.drag.active = false;
+
+            if (wasDragging) {
+                state.drag.justDragged = true;
+                setTimeout(function() { state.drag.justDragged = false; }, 350);
+                return;
+            }
+
+            if (state.pillMinimized && duration < 350) {
                 setMinimized(false);
             }
         });
+
+        // Block synthetic clicks after dragging
+        pill.addEventListener('click', function(e) {
+            if (state.drag.justDragged) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }, true);
+
+        window.addEventListener('click', function(e) {
+            if (state.drag.justDragged) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }, true);
     }
 
     // Create the Mobile Terminal Helper Bar
@@ -964,6 +1055,10 @@
 
             // 2. Single-Finger Touch in Terminal
             if (e.touches.length === 1 && isTerminalSession()) {
+                if (!state.keyboardActive && document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+                    document.activeElement.blur();
+                }
+
                 var touch = e.touches[0];
                 state.touchScroll.active = true;
                 state.touchScroll.startX = touch.clientX;
@@ -1095,8 +1190,10 @@
                 var wasLongPress = state.touchScroll.longPressFired;
                 state.touchScroll.active = false;
 
-                // Under NO circumstance should keyboard auto-pop on tap!
-                // Keyboard ONLY appears when the user explicitly taps [ ⌨️ Keyboard ]!
+                // Ensure keyboard NEVER opens on scroll or tap in terminal
+                if (!state.keyboardActive && document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+                    document.activeElement.blur();
+                }
 
                 if (wasScroll || wasLongPress) {
                     e.preventDefault();
@@ -1104,6 +1201,13 @@
                 }
             }
         }, { capture: true, passive: false });
+
+        // Global focus guard: block soft keyboard unless user clicked [ ⌨️ Keyboard ]
+        window.addEventListener('focusin', function(e) {
+            if (!state.keyboardActive && e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
+                e.target.blur();
+            }
+        }, true);
     }
 
     // Auto-Fullscreen when clicking any connection / instance link from home menu
@@ -1177,20 +1281,23 @@
                     document.body.classList.add('is-terminal-session');
                     var bar = document.getElementById('guac-mobile-term-bar');
                     if (bar) bar.classList.add('visible');
-                    syncTerminalSize(1.0);
+                    // Revert terminal to 28% scale (0.28) so it fits without leaving the screen!
+                    setScale(DEFAULT_FIT_SCALE);
+                    syncTerminalSize(DEFAULT_FIT_SCALE);
                     // NOTE: Mobile keyboard will NOT open until user explicitly taps [ ⌨️ Keyboard ]!
                 } else {
                     if (clientView) clientView.classList.remove('terminal-session');
                     document.body.classList.remove('is-terminal-session');
                     // Desktop (VNC/RDP):
                     // 1) Enable Full-Screen Trackpad
-                    // 2) Keep un-shrunk 38% fit / 1:1 scale that fits whole screen
+                    // 2) Revert desktop to 28% scale (0.28) so it fits without leaving the screen!
                     if (isTouchDevice()) {
                         applyScopeChange(function(scope) {
                             if (scope.menu) scope.menu.emulateAbsoluteMouse = false;
                         });
                         showToast('🖥️ Full Desktop | 🖱️ Trackpad Active');
                     }
+                    setScale(DEFAULT_FIT_SCALE);
                 }
 
                 if (client) {

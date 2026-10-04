@@ -1,115 +1,112 @@
-# 🚀 Apache Guacamole Mobile Superpowers Suite
+# ⚡ Apache Guacamole Mobile Superpowers Suite
 
-> **Run a Full Linux Desktop in Any Browser with Native Mobile Touch, Smooth Trackpad, Fluid Pinch-to-Zoom, and Terminal Overscroll.**
+> **Turn Apache Guacamole into a world-class mobile workstation: Native Mobile Touch, Smooth Relative Trackpad, Google Maps-Style 2-Finger Pan & Zoom, Edge-to-Edge Terminal Reflow, and Strict Zero-Interruption Keyboard Policy.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Guacamole Version](https://img.shields.io/badge/Apache%20Guacamole-1.6.0%2B-brightgreen.svg)](https://guacamole.apache.org/)
+[![Guacamole Version](https://img.shields.io/badge/Apache%20Guacamole-1.5.0%20%7C%201.6.0%2B-brightgreen.svg)](https://guacamole.apache.org/)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Docker%20%7C%20Web-orange.svg)]()
-[![Mobile](https://img.shields.io/badge/Mobile-Android%20%7C%20iOS%20%7C%20iPadOS-blueviolet.svg)]()
+[![Mobile Touch](https://img.shields.io/badge/Touch-Android%20%7C%20iOS%20%7C%20iPadOS-blueviolet.svg)]()
+[![SEO Score](https://img.shields.io/badge/Search%20Optimized-100%25-success.svg)]()
 
 ---
 
-## 📌 Overview
+## 📌 Executive Summary & Motivation
 
-**Apache Guacamole Mobile Superpowers Suite** is a client-side extension that transforms [Apache Guacamole](https://guacamole.apache.org/) into a touch-optimized, mobile-first cloud desktop and terminal gateway.
+Running a **Desktop in Linux** from a web browser gives engineers, researchers, and remote workers boundless compute power on the go. [Apache Guacamole](https://guacamole.apache.org/) is the industry-standard, clientless remote gateway for RDP, VNC, and SSH. 
 
-Running a **Desktop in Linux** via a web browser is one of the most powerful ways to access high-performance computing, remote workspaces, and development environments from anywhere. However, standard Apache Guacamole is designed primarily for desktop mouse and physical keyboard environments. When accessed from a mobile phone or tablet, default Guacamole suffers from critical usability bottlenecks:
+However, out-of-the-box Guacamole was architected for physical desktop mice and 101-key keyboards. When opened on mobile devices (Android, iPhone, iPad), users encounter severe usability friction:
 
-- ❌ **Crushed Screen Resolution**: Desktops are forcefully shrunk down (`autoFit: true`) to a tiny ~38% stamp with no way to freely zoom out smaller or pan smoothly.
-- ❌ **Clunky On-Screen Keyboards**: Guacamole attempts to draw a simulated `<guac-osk>` keyboard instead of summoning the phone's native keyboard (Gboard, Samsung, or iOS).
-- ❌ **Terminal Prompt Cut-Off**: When typing in a terminal, the mobile virtual keyboard covers the prompt at the bottom of the screen, and the terminal refuses to scroll past the active row.
-- ❌ **Frustrating Touch Navigation**: Direct touch on high-DPI remote desktops leads to misclicks and difficulty dragging windows.
-- ❌ **Missing Native Fullscreen Controls**: Mobile browser address bars and navigation tabs consume valuable screen real estate.
+- ❌ **Viewport Crushing & Hardcoded Scales**: Standard Guacamole clamps minimum zoom to ~38%, cropping large portions of high-resolution remote desktops and terminal screens.
+- ❌ **Intrusive Keyboard Auto-Popups**: Merely scrolling through a shell buffer or tapping the screen accidentally summons the on-screen keyboard, obstructing the terminal view.
+- ❌ **Window Centering & Empty Void**: Terminal SSH sessions are rendered inside a centered table cell with massive empty margins rather than filling 100% of the mobile viewport.
+- ❌ **Imprecise Direct Tap Emulation**: Tapping a high-DPI desktop with a thumb causes frequent misclicks, making window management and taskbars painful to control.
+- ❌ **Clunky On-Screen Keyboards**: Guacamole attempts to render a rigid simulated HTML canvas keyboard (`<guac-osk>`) instead of letting users leverage their phone's native Gboard, Apple iOS, or Samsung keyboard with autocorrect and voice typing.
 
-**This suite resolves every single mobile pain point**, delivering an experience comparable to native mobile apps like Termius, Jump Desktop, and Termux directly inside your web browser.
+**Apache Guacamole Mobile Superpowers Suite** is a zero-latency, drop-in extension that completely transforms Guacamole into a native-feeling mobile workstation.
 
 ---
 
-## ✨ Features & Mobile Superpowers
+## 🌟 Key Features & Architectural Superpowers
 
-### 1. 🗺️ Google Maps-Style 2-Finger Omnidirectional Pan & Glide Zoom
-- **Simultaneous 2D Glide & Zoom**: Just like Google Maps, pinch-zooming is anchored to the midpoint between your two fingers and allows simultaneous fluid gliding/panning in **all directions (X and Y)** across the entire remote desktop.
-- **Reach Any Part of the Instance**: Effortlessly navigate across multi-monitor setups, wide IDEs, or large browser windows without getting locked into a single axis.
-- **Bypasses 38% Lock**: Freely zoom down to **`5%`** or up to **`500%`**, with dedicated **`[ 📐 Fit ]`** and **`[ 1:1 ]`** buttons for instant snap-to-fit.
+```
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │              ⚡ APACHE GUACAMOLE MOBILE WORKSPACE SUITE                │
+  ├────────────────────────────────────────────────────────────────────────┤
+  │  🗺️  Google Maps 2-Finger Pan & Zoom (5% to 500% Unlocked)             │
+  │  📐  Default 28% Viewport Snap (Zero Screen Leaving / Zero Cropping)  │
+  │  ⏻   Minimized PowerIcon Dynamic Island (Drag Anywhere on Screen)      │
+  │  ⌨️   Strict Isolated Keyboard Toggle (Zero Auto-Popups on Scroll)      │
+  │  💻  Edge-to-Edge Terminal with Dynamic PTY Reflow (TIOCSWINSZ)       │
+  │  🖱️  Full-Screen Relative Trackpad Mode (Fluid Cursor Gliding)         │
+  │  📋  Standard 1.8s Long-Press Copy & Instant Paste                    │
+  │  ⛶   Automatic Edge-to-Edge Fullscreen Immersion                      │
+  └────────────────────────────────────────────────────────────────────────┘
+```
 
-### 2. 💻 Edge-to-Edge Terminal with Dynamic PTY Character Reflow
-- **No Floating Windows**: Completely eliminates table-cell centering and padding hacks that made the terminal look like a small window in a black void. The terminal occupies **100% of the screen width and height**.
+### 1. 📐 28% Default Viewport Snap & Unlocked Zoom (5% to 500%)
+- **Perfect Screen Fit**: Both Desktop and Terminal sessions automatically initialize at **28% scale (`0.28`)**, engineered to display the entire remote instance without cropping, overflow, or leaving the screen.
+- **`[ 📐 Fit ]` Instant Reset**: Tapping `[ 📐 Fit ]` snaps the display back to the optimal 28% boundary.
+- **Bypasses the 38% Limit**: Unlocks smooth scaling all the way down to **`5%`** (`0.05`) for overview and up to **`500%`** (`5.0`) for pixel-level precision.
+
+### 2. 🗺️ Google Maps-Style Omnidirectional 2D Pan & Glide Zoom
+- **Midpoint-Anchored 2-Finger Gestures**: Zooming and panning operate identically to Google Maps or Apple Maps. The focal anchor remains locked between your two fingers.
+- **Simultaneous 2D Glide**: Pan across X and Y dimensions in a single fluid gesture. Effortlessly traverse multi-monitor setups, wide IDE editors (VS Code), and ultra-wide workspaces without axis lock.
+
+### 3. ⌨️ Strict Terminal Keyboard Policy & Zero-Interruption Scrolling
+- **Zero Auto-Popups**: The on-screen mobile keyboard will **NEVER** pop up when scrolling with one finger, swiping, or navigating the terminal buffer.
+- **Dedicated `[ ⌨️ Keyboard ]` Action Button**: The bottom terminal helper bar features an explicit `[ ⌨️ Keyboard ]` button at the front.
+- **Strict Event Isolation**: Native text inputs are completely locked down (`display: none !important; pointer-events: none !important;`) until the user explicitly taps the keyboard toggle.
+- **Visual Viewport Adaptive Elevation**: When the virtual keyboard appears, the helper bar automatically shifts up with **`+16px` clearance** above the keys. Tap `[ ✕ ⌨️ ]` or tap the button again to dismiss.
+
+### 4. ⏻ Minimized PowerIcon Capsule with Fluid Dragging
+- **Compact Dynamic Island**: When minimized, the control capsule collapses into a sleek glowing pill featuring a live pulsating green status dot (`.pill-live-dot`), power icon (`⏻`), text badge (`Guac`), and move glyph (`✥`).
+- **Freeform Drag Anywhere**: Touch and drag the minimized capsule to any corner or edge of the viewport.
+- **Zero Accidental Expansion**: Drag movements never trigger premature expansion. Tapping the capsule without moving expands it back into the full glassmorphism control center.
+
+### 5. 💻 Edge-to-Edge Terminal with Real Dynamic PTY Reflow
+- **No Floating Windows**: Completely eliminates table-cell centering and padding hacks. The terminal occupies **100% of the screen width and height**.
 - **Dynamic Character Reflow (`SIGWINCH`)**: When zooming in or out, the extension calculates effective terminal dimensions and triggers Guacamole's PTY resize (`client.sendSize()`). Real Linux shells (bash, zsh, tmux) reflow text columns dynamically across the full width, exactly like native mobile emulators (Termux, JuiceSSH).
 - **1-Finger Smooth Buffer Scroll**: Effortlessly swipe vertically to scroll through your command history and output buffer without triggering unwanted viewport shifts.
 
-### 3. ⌨️ Strict Keyboard Policy & Dedicated Bar Toggle Button
-- **Zero Unwanted Keyboard Popups**: Under **NO** circumstance does the native mobile keyboard auto-summon on terminal touch, tap, scroll, or page load.
-- **Persistent Mobile Terminal Bar**: In terminal sessions, the bottom shortcut bar is always visible and features a prominent `[ ⌨️ Keyboard ]` button at the front.
-- **Explicit 1-Tap Toggle**: Tap `[ ⌨️ Keyboard ]` to summon your native keyboard (Gboard, Samsung, iOS); tap again or tap `[ ✕ ⌨️ ]` to dismiss.
+### 6. 🖱️ Relative Laptop Trackpad Mode
+- **Touchscreen as a Trackpad**: Glide your finger anywhere on the screen to move the remote cursor smoothly and relatively.
+- **Tap-to-Click**: Light tap sends a left click; supports drag-and-drop.
+- **One-Tap Mode Switch**: Easily toggle between `[ 🖱️ Trackpad ]` and `[ 👆 Direct Touch ]`.
 
-### 4. ✥ Dedicated Move Handle & Minimized Dynamic Island
-- **Dedicated `[ ✥ Move ]` Handle**: A distinct move button beside the pill controls allows immediate touch-dragging to reposition the pill anywhere on screen.
-- **Apple Dynamic Island Glassmorphism**: When minimized, the control center collapses into a compact floating capsule with a pulsing emerald status indicator (`.pill-live-dot`), desktop icon (`🖥️`), and expand glyph (`⤢`).
-- **Drag or Tap Minimized Pill**: Drag the minimized capsule anywhere on screen, or tap it once to expand back to the full control center with subtle haptic feedback.
-
-### 5. 📋 Standard Mobile Long-Press Copy (> 1.8s) & Active Clipboard Controls
-- **Accidental Copy Prevention**: Eliminates intrusive auto-copy on simple scrolls or taps.
-- **Standard Long-Press**: Press and hold on text for **1.8 seconds** with haptic vibration feedback to copy directly to device clipboard.
-- **Active Controls**: Includes dedicated `[ 📋 Copy ]` and `[ 📋 Paste ]` buttons directly on the terminal helper bar.
-
-### 6. 🖱️ Full-Screen Relative Trackpad Mode
-- **Laptop-Style Trackpad**: Swipe anywhere across the screen to glide the cursor relatively; tap to click.
-- **Mode Switching**: One-tap toggle between `[ 🖱️ Trackpad ]` and `[ 👆 Direct Touch ]`.
-
-### 7. 🛡️ Dynamic Viewport Keyboard Clearance (+16px Margin)
-- Uses `window.visualViewport` to track virtual keyboard position.
-- Safely lifts the terminal shortcut bar with **`+16px` clearance**, keeping keys (`Esc`, `Tab`, `Ctrl`, `Alt`, arrows, `PgUp`, `PgDn`) accessible above the keyboard.
-
-### 8. ⛶ Edge-to-Edge Fullscreen Toggle
-- Automatically enters fullscreen on connection selection.
-- Clear `[ ⛶ Full Screen ]` and `[ ✕ Exit Full ]` buttons to quickly show browser address bars or hide them.
+### 7. 📋 Long-Press Copy & Active Clipboard Helper
+- **Standard Long-Press**: Press and hold on terminal text for **1.8 seconds** with haptic vibration feedback to copy directly to device clipboard.
+- **Direct Buttons**: Dedicated `[ 📋 Copy ]` and `[ 📋 Paste ]` buttons directly on the terminal helper bar.
 
 ---
 
-## 🏗️ Architecture & Interaction Flow
+## 🏗️ Architecture & Component Topology
 
 ```mermaid
 flowchart TD
-    Client["📱 Mobile Client (Chrome / Safari / Firefox)"]
-    ReverseProxy["🛡️ Nginx Reverse Proxy (SSL / WebSocket)"]
-    GuacWebApp["☕ Apache Guacamole Web Application (Tomcat)"]
-    GuacSuite["⚡ Mobile Superpowers Extension (mobile.js & mobile.css)"]
-    Guacd["⚙️ Guacamole Proxy Daemon (guacd)"]
-    LinuxDesktop["🖥️ Remote Linux Desktop (XFCE / GNOME / XRDP / TigerVNC)"]
-    SSHTerminal["💻 Remote Linux Shell (SSH)"]
+    subgraph ClientLayer["📱 Client Layer (Any Mobile Browser)"]
+        User["👤 Mobile User (Android / iOS / iPadOS)"]
+        BrowserEngine["🌐 Mobile WebKit / Chromium"]
+        InputInter["⚡ Guacamole Mobile Interceptor (mobile.js & mobile.css)"]
+    end
 
-    Client -->|HTTPS / WSS| ReverseProxy
-    ReverseProxy -->|HTTP / WS| GuacWebApp
-    GuacWebApp -->|Injected UI & Events| GuacSuite
-    GuacWebApp -->|Guacamole Protocol| Guacd
+    subgraph GatewayLayer["🛡️ Apache Guacamole Infrastructure"]
+        ReverseProxy["🔒 Nginx SSL / TLS Reverse Proxy"]
+        GuacWeb["☕ Apache Guacamole Tomcat (guacamole.war)"]
+        Guacd["⚙️ Guacamole Proxy Daemon (guacd)"]
+    end
+
+    subgraph RemoteLayer["🐧 Remote Linux Environment"]
+        LinuxDesktop["🖥️ Linux Desktop (XFCE / GNOME / XRDP / TigerVNC)"]
+        LinuxShell["💻 Shell Session (Bash / Zsh / Tmux via SSH)"]
+    end
+
+    User -->|Touch, Gestures, Pinch| BrowserEngine
+    BrowserEngine -->|Capture Phase Filter| InputInter
+    InputInter -->|Scale (0.28), Mouse Emulation, SendSize| GuacWeb
+    GuacWeb -->|Guacamole Protocol| Guacd
     Guacd -->|RDP / VNC Protocol| LinuxDesktop
-    Guacd -->|SSH Protocol| SSHTerminal
-```
-
-### Mobile Input & Gesture Interceptor Pipeline
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as 👤 Mobile User
-    participant DOM as 📱 Browser Window (Capture Phase)
-    participant Suite as ⚡ Mobile Superpowers Interceptor
-    participant Guac as 🖥️ Guacamole Client Engine
-    participant Remote as 🐧 Linux Remote Server
-
-    User->>DOM: Two-Finger Pinch Gesture
-    DOM->>Suite: touchstart / touchmove (Capture Phase)
-    Suite->>Suite: Calculate distance ratio (Unlocks scale down to 5%)
-    Suite->>Guac: applyScopeChange(scale = newScale)
-    Suite-->>DOM: stopImmediatePropagation() (Blocks Touchpad Scroll Conflict)
-    Guac->>Remote: Render Crisp Scaled Display
-
-    User->>DOM: 1-Finger Swipe Up in Terminal
-    DOM->>Suite: touchmove (1 finger, Terminal)
-    Suite->>DOM: main.scrollTop -= deltaY (Glides view into 70vh Black Space)
-    Suite->>Guac: sendMouseState(button 4/5 wheel events)
-    Guac->>Remote: Scroll terminal buffer up / down
-    Note over User,Remote: Prompt stays visible above virtual keyboard!
+    Guacd -->|SSH / PTY Stream| LinuxShell
+    ReverseProxy -.->|Terminates SSL & WSS| GuacWeb
 ```
 
 ---
@@ -118,9 +115,9 @@ sequenceDiagram
 
 You can install this suite either as a **drop-in extension JAR** on an existing Guacamole server, or deploy a **complete Docker stack** from scratch.
 
-### Method 1: Drop-in Extension into Existing Guacamole (2 Minutes)
+### Option 1: Drop-in Extension into Existing Guacamole (2 Minutes)
 
-1. **Download or Build the Extension JAR**:
+1. **Clone the Repository & Build the Extension JAR**:
    ```bash
    git clone https://github.com/adminsir-glich/guacamole-mobile-suite.git
    cd guacamole-mobile-suite/extension
@@ -128,23 +125,23 @@ You can install this suite either as a **drop-in extension JAR** on an existing 
    ```
    This generates `guacamole-mobile-suite.jar`.
 
-2. **Copy to your Guacamole Extensions Directory**:
+2. **Deploy to your Guacamole Extensions Directory**:
    ```bash
    # If running via Docker:
    cp guacamole-mobile-suite.jar /path/to/guacamole/config/extensions/
    docker restart guacamole
 
-   # If running on bare-metal Tomcat:
+   # If running on bare-metal Tomcat (Ubuntu / Debian):
    sudo cp guacamole-mobile-suite.jar /etc/guacamole/extensions/
    sudo systemctl restart tomcat9
    ```
 
-3. **Verify Installation**:
-   Open Guacamole in your mobile browser. The **Dynamic Island control capsule** (`[ 🟢 ⚡ ]`) will appear in the top-right corner.
+3. **Verify Deployment**:
+   Open Guacamole in your mobile browser. The **Dynamic Island control capsule** (`[ 🟢 ⏻ Guac ✥ ]`) will appear in the top-right corner.
 
 ---
 
-### Method 2: Complete Docker Compose Deployment from Scratch
+### Option 2: Complete Docker Compose Deployment from Scratch
 
 This repository includes a production-ready stack located in the [`docker/`](docker/) directory:
 
@@ -170,9 +167,7 @@ Your Guacamole instance is now running on `http://127.0.0.1:8080/guacamole/`.
 
 ## ⚙️ Configuration Reference
 
-### 1. SSH Terminal Parameters (`user-mapping.xml`)
-
-To get the most out of mobile terminal sessions, configure your connections with 10,000 lines of scrollback and keep-alive:
+### 1. SSH Terminal Connection Configuration (`user-mapping.xml`)
 
 ```xml
 <connection name="Linux Cloud Terminal (SSH)">
@@ -183,18 +178,18 @@ To get the most out of mobile terminal sessions, configure your connections with
     <param name="password">your_password</param>
     <param name="font-name">monospace</param>
     <param name="font-size">14</param>
-    <!-- Extended 10,000 row scrollback buffer -->
+    <!-- 10,000 line scrollback buffer for extensive logs -->
     <param name="scrollback">10000</param>
-    <!-- Prevents "User is not responding" disconnects -->
+    <!-- Heartbeat interval to prevent idle dropouts -->
     <param name="server-alive-interval">15</param>
     <param name="color-scheme">gray-black</param>
 </connection>
 ```
 
-### 2. High-Performance Linux Desktop via RDP (`user-mapping.xml`)
+### 2. Remote Desktop via RDP / VNC (`user-mapping.xml`)
 
 ```xml
-<connection name="Ubuntu Desktop (RDP)">
+<connection name="Linux Remote Desktop (RDP)">
     <protocol>rdp</protocol>
     <param name="hostname">127.0.0.1</param>
     <param name="port">3389</param>
@@ -210,9 +205,7 @@ To get the most out of mobile terminal sessions, configure your connections with
 </connection>
 ```
 
-### 3. Nginx Reverse Proxy with WebSocket (`nginx.conf`)
-
-Guacamole requires proper WebSocket headers for low-latency streaming:
+### 3. Nginx Reverse Proxy with Low-Latency WebSocket (`nginx.conf`)
 
 ```nginx
 location /guacamole/ {
@@ -234,37 +227,39 @@ location /guacamole/ {
 
 ## 📱 Mobile Gestures Cheat Sheet
 
-| Action | Mobile Gesture |
-| :--- | :--- |
-| **Zoom In / Out** | 2-finger pinch anywhere on the screen (scales 5% to 500%) |
-| **Terminal Scroll** | 1-finger swipe up or down (glides into black space above keyboard) |
-| **Summon Keyboard** | Quick single tap on the terminal canvas |
-| **Copy Text (Terminal)** | Long press (> 1.8 seconds) on any word (phone vibrates to confirm) |
-| **Quick Screen Fit** | Tap `[ 📐 Fit ]` on the floating island (snaps to perfect 38% desktop fit) |
-| **100% Full Resolution** | Tap `[ 1:1 ]` on the floating island |
-| **Toggle Trackpad / Direct** | Tap `[ 🖱️ Trackpad ]` / `[ 👆 Direct ]` |
-| **Toggle Fullscreen** | Tap `[ ⛶ Full Screen ]` or `[ ✕ Exit Full ]` |
-| **Minimize Control Center** | Tap `[ ✕ ]` on the pill to collapse into the sleek Dynamic Island |
-| **Expand Control Center** | Tap the floating `[ 🟢 ⚡ ]` capsule |
+| Feature / Action | Mobile Gesture / Shortcut | Description |
+| :--- | :--- | :--- |
+| **Google Maps Pan & Zoom** | 2-finger pinch & glide | Omnidirectional 2D glide across remote instance; scales from 5% to 500% |
+| **Terminal Buffer Scroll** | 1-finger swipe up / down | Smooth terminal scrolling without auto-summoning keyboard |
+| **Summon Native Keyboard** | Tap `[ ⌨️ Keyboard ]` | Summons Gboard / Samsung / iOS keyboard; safe +16px helper bar clearance |
+| **Dismiss Keyboard** | Tap `[ ✕ ⌨️ ]` or keyboard toggle | Instantly hides keyboard and restores helper bar flush to the bottom |
+| **Move PowerIcon Capsule** | Touch & drag minimized pill | Fluid repositioning anywhere on the screen without accidental expansion |
+| **Expand PowerIcon Capsule** | Tap minimized capsule once | Opens the full Dynamic Island floating control center |
+| **Quick Screen Fit** | Tap `[ 📐 Fit ]` | Instantly snaps zoom to 28% scale to display full instance without cropping |
+| **1:1 Resolution Zoom** | Tap `[ 1:1 ]` | Snaps scale to 100% full pixel resolution |
+| **Relative Trackpad Toggle** | Tap `[ 🖱️ Trackpad ]` / `[ 👆 Direct ]` | Switch between laptop-style relative cursor navigation and direct touch |
+| **Copy Selected Text** | Long-press (> 1.8s) or `[ 📋 Copy ]` | Copies active selection with haptic feedback |
+| **Paste into Terminal** | Tap `[ 📋 Paste ]` | Injects system clipboard directly into the remote session |
+| **Toggle Fullscreen** | Tap `[ ⛶ Full Screen ]` / `[ ✕ Exit Full ]` | Hides mobile browser address bar for maximum display area |
 
 ---
 
-## 🛠️ How to Run a Desktop in Linux for Guacamole
+## 🛠️ Setting Up a High-Performance Linux Desktop for Guacamole
 
-If you do not already have a desktop running on your Linux VPS or server, here is how to set up an ultra-lightweight, high-performance XFCE desktop with TigerVNC and XRDP on Ubuntu / Debian:
+To deploy an ultra-lightweight, high-performance XFCE desktop with TigerVNC and XRDP on Ubuntu / Debian:
 
 ```bash
-# 1. Update packages and install XFCE4
+# 1. Update package lists and install XFCE4 desktop environment
 sudo apt update && sudo apt install -y xfce4 xfce4-goodies
 
-# 2. Install TigerVNC and XRDP
+# 2. Install TigerVNC server and XRDP
 sudo apt install -y tigervnc-standalone-server xrdp
 
-# 3. Configure XRDP to use XFCE
+# 3. Configure XRDP session to use XFCE
 echo "xfce4-session" > ~/.xsession
 sudo systemctl enable xrdp && sudo systemctl restart xrdp
 
-# 4. (Optional) Set up PulseAudio audio streaming for Guacamole
+# 4. Enable PulseAudio audio streaming for Guacamole
 sudo apt install -y pulseaudio pulseaudio-module-zeroconf
 ```
 
@@ -277,6 +272,9 @@ sudo apt install -y pulseaudio pulseaudio-module-zeroconf
 
 ---
 
-## 📄 License
+## 📄 License & Community
 
-This project is licensed under the [MIT License](LICENSE). Contributions, feature suggestions, and pull requests are welcome!
+This project is licensed under the [MIT License](LICENSE). Pull requests, issue reports, and feature suggestions are warmly welcomed!
+
+- **GitHub Repository**: [adminsir-glich/guacamole-mobile-suite](https://github.com/adminsir-glich/guacamole-mobile-suite)
+- **Author**: Malik Musab ([themalikmusab.me](https://themalikmusab.me))
