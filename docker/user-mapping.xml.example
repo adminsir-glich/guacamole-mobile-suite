@@ -1,0 +1,55 @@
+<user-mapping>
+    <!-- 
+      SAMPLE USER MAPPING CONFIGURATION
+      Replace all sample usernames, passwords, and IP addresses with your own.
+      Passwords can be stored in plaintext or as SHA-256 hashes.
+    -->
+    <authorize username="sample_user" password="SampleStrongPassword123!">
+
+        <!-- 1. Full Linux Desktop (VNC) -->
+        <connection name="Ubuntu Desktop (VNC)">
+            <protocol>vnc</protocol>
+            <param name="hostname">127.0.0.1</param>
+            <param name="port">5901</param>
+            <param name="password">VncDesktopPassword123!</param>
+            <param name="color-depth">24</param>
+            <param name="enable-audio">true</param>
+            <param name="audio-servername">127.0.0.1</param>
+        </connection>
+
+        <!-- 2. High-Performance Linux Desktop (RDP with Audio & Drive Redirection) -->
+        <connection name="Ubuntu Desktop (RDP)">
+            <protocol>rdp</protocol>
+            <param name="hostname">127.0.0.1</param>
+            <param name="port">3389</param>
+            <param name="username">sample_user</param>
+            <param name="password">SampleStrongPassword123!</param>
+            <param name="security">any</param>
+            <param name="ignore-cert">true</param>
+            <param name="enable-audio">true</param>
+            <param name="enable-audio-input">true</param>
+            <param name="resize-method">reconnect</param>
+            <param name="color-depth">24</param>
+            <param name="enable-font-smoothing">true</param>
+            <param name="enable-drive">true</param>
+            <param name="drive-path">/tmp/guac-drive</param>
+            <param name="drive-name">CloudDrive</param>
+            <param name="create-drive-path">true</param>
+        </connection>
+
+        <!-- 3. Supercharged SSH Terminal (Enhanced for Mobile with 10k Scrollback) -->
+        <connection name="Linux Cloud Terminal (SSH)">
+            <protocol>ssh</protocol>
+            <param name="hostname">127.0.0.1</param>
+            <param name="port">22</param>
+            <param name="username">sample_user</param>
+            <param name="password">SampleStrongPassword123!</param>
+            <param name="font-name">monospace</param>
+            <param name="font-size">14</param>
+            <param name="scrollback">10000</param>
+            <param name="server-alive-interval">15</param>
+            <param name="color-scheme">gray-black</param>
+        </connection>
+
+    </authorize>
+</user-mapping>

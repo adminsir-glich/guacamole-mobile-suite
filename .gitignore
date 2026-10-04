@@ -1,0 +1,16 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+*~
+
+# Temporary and log files
+*.log
+*.tmp
+*.bak
+
+# Sensitive user credential files
+user-mapping.xml
+*.key
+*.pem
+*.pfx
+.env

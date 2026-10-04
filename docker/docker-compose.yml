@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Guacamole proxy daemon
+  guacd:
+    image: guacamole/guacd:1.6.0
+    container_name: guacd
+    restart: always
+    networks:
+      - guac-net
+
+  # Guacamole web application
+  guacamole:
+    image: guacamole/guacamole:1.6.0
+    container_name: guacamole
+    restart: always
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: 4822
+    volumes:
+      # Mount the mobile superpowers extension JAR
+      - ./extensions:/etc/guacamole/extensions:ro
+      # User authentication mapping (with your redacted passwords)
+      - ./user-mapping.xml:/etc/guacamole/user-mapping.xml:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - guacd
+    networks:
+      - guac-net
+
+networks:
+  guac-net:
+    driver: bridge

@@ -1,0 +1,7 @@
+{
+    "guacamoleVersion" : "1.6.0",
+    "name"             : "Guacamole Mobile Superpowers Suite",
+    "namespace"        : "guac-mobile-suite",
+    "js"               : [ "mobile.js" ],
+    "css"              : [ "mobile.css" ]
+}
