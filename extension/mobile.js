@@ -36,8 +36,9 @@
         pillMinimized: false,
         keyboardActive: false,
         lastClipboardText: '',
-        pinch: {
+        twoFinger: {
             active: false,
+            mode: 'undecided', // 'undecided', 'scroll', 'pinch'
             initialDist: 0,
             initialScale: 1.0,
             initialMidX: 0,
@@ -46,7 +47,11 @@
             initialScrollTop: 0,
             focalX: 0,
             focalY: 0,
-            lastToastTime: 0
+            lastT1Y: 0,
+            lastT2Y: 0,
+            accumulatedY: 0,
+            lastToastTime: 0,
+            startTime: 0
         },
         touchScroll: {
             active: false,
@@ -639,8 +644,7 @@
             '  <button class="pill-btn btn-mini-toggle" title="Minimize Controls">✕</button>',
             '</div>',
             '<div class="pill-mini-badge" title="Tap to expand | Drag anywhere to move">',
-            '  <span class="pill-live-dot"></span>',
-            '  <span class="pill-mini-icon">⏻</span>',
+            '  <svg class="pill-mini-power-svg" viewBox="0 0 24 24" width="13" height="13" stroke="#38bdf8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>',
             '  <span class="pill-mini-text">Guac</span>',
             '  <span class="pill-mini-expand">✥</span>',
             '</div>'
@@ -958,6 +962,37 @@
     }
 
     /**
+     * Sends mouse wheel scroll event to remote desktop / application under touch coordinates.
+     * Enables two-finger page scrolling across web browsers, documents, editors, and windows.
+     */
+    function sendRemoteScroll(direction, clientX, clientY) {
+        var client = getActiveClient();
+        if (!client || !client.client) return;
+
+        var guacClientEl = document.querySelector('guac-client');
+        var displayEl = guacClientEl ? guacClientEl.querySelector('.display') : null;
+        var scale = (client.clientProperties && client.clientProperties.scale) || 1.0;
+        var x = 100;
+        var y = 100;
+
+        if (displayEl && clientX != null && clientY != null) {
+            var rect = displayEl.getBoundingClientRect();
+            x = Math.round((clientX - rect.left) / scale);
+            y = Math.round((clientY - rect.top) / scale);
+        }
+
+        var isUp = (direction === 'up');
+        var isDown = (direction === 'down');
+
+        // Button 4 = wheel up, Button 5 = wheel down
+        var stateDown = new Guacamole.Mouse.State(x, y, false, false, false, isUp, isDown);
+        client.client.sendMouseState(stateDown);
+
+        var stateUp = new Guacamole.Mouse.State(x, y, false, false, false, false, false);
+        client.client.sendMouseState(stateUp);
+    }
+
+    /**
      * Standard mobile long-press handler for text copying (> 1.8 seconds).
      */
     function handleTerminalLongPress(touch) {
@@ -1015,7 +1050,7 @@
                 return;
             }
 
-            // 1. Two-Finger Google Maps Pan & Zoom (Simultaneous 2D Glide & Zoom)
+            // 1. Two-Finger Gestures (Trackpad Page Scroll OR Google Maps Pan & Zoom)
             if (e.touches.length === 2) {
                 var client = getActiveClient();
                 if (client && client.clientProperties) {
@@ -1035,15 +1070,20 @@
                         ? client.clientProperties.scrollTop 
                         : (mainEl ? mainEl.scrollTop : 0);
 
-                    state.pinch.active = true;
-                    state.pinch.initialDist = dist;
-                    state.pinch.initialScale = curScale;
-                    state.pinch.initialMidX = midX;
-                    state.pinch.initialMidY = midY;
-                    state.pinch.initialScrollLeft = curScrollLeft;
-                    state.pinch.initialScrollTop = curScrollTop;
-                    state.pinch.focalX = (midX + curScrollLeft) / curScale;
-                    state.pinch.focalY = (midY + curScrollTop) / curScale;
+                    state.twoFinger.active = true;
+                    state.twoFinger.mode = 'undecided';
+                    state.twoFinger.initialDist = dist;
+                    state.twoFinger.initialScale = curScale;
+                    state.twoFinger.initialMidX = midX;
+                    state.twoFinger.initialMidY = midY;
+                    state.twoFinger.initialScrollLeft = curScrollLeft;
+                    state.twoFinger.initialScrollTop = curScrollTop;
+                    state.twoFinger.focalX = (midX + curScrollLeft) / curScale;
+                    state.twoFinger.focalY = (midY + curScrollTop) / curScale;
+                    state.twoFinger.lastT1Y = t1.clientY;
+                    state.twoFinger.lastT2Y = t2.clientY;
+                    state.twoFinger.accumulatedY = 0;
+                    state.twoFinger.startTime = Date.now();
 
                     clearTimeout(state.touchScroll.longPressTimer);
                     state.touchScroll.active = false;
@@ -1086,49 +1126,87 @@
                 return;
             }
 
-            // 1. Google Maps-Style 2-Finger Pan & Zoom (Omnidirectional 2D Navigation)
-            if (state.pinch.active && e.touches.length === 2) {
+            // 1. Two-Finger Gestures (Trackpad Page Scroll & Google Maps 2D Glide Zoom)
+            if (state.twoFinger.active && e.touches.length === 2) {
                 var client = getActiveClient();
-                if (client && client.clientProperties && state.pinch.initialDist > 0) {
-                    patchClientScale(client);
+                if (client && client.clientProperties && state.twoFinger.initialDist > 0) {
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
                     var currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
                     var currentMidX = (t1.clientX + t2.clientX) / 2;
                     var currentMidY = (t1.clientY + t2.clientY) / 2;
 
-                    var ratio = currentDist / state.pinch.initialDist;
-                    var newScale = state.pinch.initialScale * ratio;
-                    var minS = 0.05;
-                    var maxS = 5.0;
-                    newScale = Math.max(minS, Math.min(maxS, newScale));
+                    var distRatio = currentDist / state.twoFinger.initialDist;
+                    var dy1 = t1.clientY - state.twoFinger.lastT1Y;
+                    var dy2 = t2.clientY - state.twoFinger.lastT2Y;
+                    var avgDy = (dy1 + dy2) / 2;
 
-                    // Google Maps anchoring & 2D glide formula:
-                    var newScrollLeft = Math.round((state.pinch.focalX * newScale) - currentMidX);
-                    var newScrollTop = Math.round((state.pinch.focalY * newScale) - currentMidY);
+                    // Gesture Classifier: Trackpad Page Scroll vs Pinch-to-Zoom
+                    if (state.twoFinger.mode === 'undecided') {
+                        var distDelta = Math.abs(currentDist - state.twoFinger.initialDist);
+                        var movedY = Math.abs(avgDy);
+                        var fingersParallel = (dy1 * dy2 > 0);
 
-                    applyScopeChange(function() {
-                        client.clientProperties.autoFit = false;
-                        client.clientProperties.scale = newScale;
-                        client.clientProperties.scrollLeft = newScrollLeft;
-                        client.clientProperties.scrollTop = newScrollTop;
-                    });
-
-                    var mainEl = document.querySelector('div.main');
-                    if (mainEl) {
-                        mainEl.style.overflow = 'auto';
-                        mainEl.scrollLeft = newScrollLeft;
-                        mainEl.scrollTop = newScrollTop;
+                        // If fingers pinched together or spread apart -> Pinch-to-Zoom!
+                        if (distDelta > 25 || distRatio < 0.88 || distRatio > 1.12) {
+                            state.twoFinger.mode = 'pinch';
+                        }
+                        // If fingers moved together in parallel vertically -> Trackpad Page Scroll!
+                        else if (movedY > 5 && fingersParallel) {
+                            state.twoFinger.mode = 'scroll';
+                        }
                     }
 
-                    if (isTerminalSession()) {
-                        debouncedTerminalResize(newScale);
-                    }
+                    // Mode A: Two-Finger Trackpad Page Scroll (Scrolls web pages, documents, terminals)
+                    if (state.twoFinger.mode === 'scroll') {
+                        state.twoFinger.accumulatedY += avgDy;
+                        state.twoFinger.lastT1Y = t1.clientY;
+                        state.twoFinger.lastT2Y = t2.clientY;
 
-                    var now = Date.now();
-                    if (now - state.pinch.lastToastTime > 350) {
-                        state.pinch.lastToastTime = now;
-                        showToast('🔍 ' + Math.round(newScale * 100) + '%');
+                        // 15px step = 1 wheel click
+                        var scrollThreshold = 15;
+                        if (Math.abs(state.twoFinger.accumulatedY) >= scrollThreshold) {
+                            // Swiping fingers up (avgDy < 0) scrolls page down (content moves up)
+                            // Swiping fingers down (avgDy > 0) scrolls page up (content moves down)
+                            var dir = (state.twoFinger.accumulatedY < 0) ? 'down' : 'up';
+                            sendRemoteScroll(dir, currentMidX, currentMidY);
+                            state.twoFinger.accumulatedY %= scrollThreshold;
+                        }
+                    }
+                    // Mode B: Google Maps 2D Glide & Zoom
+                    else if (state.twoFinger.mode === 'pinch') {
+                        patchClientScale(client);
+                        var newScale = state.twoFinger.initialScale * distRatio;
+                        var minS = 0.05;
+                        var maxS = 5.0;
+                        newScale = Math.max(minS, Math.min(maxS, newScale));
+
+                        var newScrollLeft = Math.round((state.twoFinger.focalX * newScale) - currentMidX);
+                        var newScrollTop = Math.round((state.twoFinger.focalY * newScale) - currentMidY);
+
+                        applyScopeChange(function() {
+                            client.clientProperties.autoFit = false;
+                            client.clientProperties.scale = newScale;
+                            client.clientProperties.scrollLeft = newScrollLeft;
+                            client.clientProperties.scrollTop = newScrollTop;
+                        });
+
+                        var mainEl = document.querySelector('div.main');
+                        if (mainEl) {
+                            mainEl.style.overflow = 'auto';
+                            mainEl.scrollLeft = newScrollLeft;
+                            mainEl.scrollTop = newScrollTop;
+                        }
+
+                        if (isTerminalSession()) {
+                            debouncedTerminalResize(newScale);
+                        }
+
+                        var now = Date.now();
+                        if (now - state.twoFinger.lastToastTime > 350) {
+                            state.twoFinger.lastToastTime = now;
+                            showToast('🔍 ' + Math.round(newScale * 100) + '%');
+                        }
                     }
                 }
                 e.preventDefault();
@@ -1137,7 +1215,7 @@
             }
 
             // 2. Terminal 1-Finger Touch: Smooth buffer scrolling (No window distortion)
-            if (state.touchScroll.active && e.touches.length === 1 && !state.pinch.active && isTerminalSession()) {
+            if (state.touchScroll.active && e.touches.length === 1 && !state.twoFinger.active && isTerminalSession()) {
                 var touch = e.touches[0];
                 var deltaY = touch.clientY - state.touchScroll.lastY;
                 var totalMoved = Math.hypot(touch.clientX - state.touchScroll.startX, touch.clientY - state.touchScroll.startY);
@@ -1169,10 +1247,13 @@
                 return;
             }
 
-            // 1. End pinch
-            if (state.pinch.active && e.touches.length < 2) {
-                state.pinch.active = false;
-                if (isTerminalSession()) {
+            // 1. End two-finger gesture
+            if (state.twoFinger.active && e.touches.length < 2) {
+                var wasPinch = (state.twoFinger.mode === 'pinch');
+                state.twoFinger.active = false;
+                state.twoFinger.mode = 'undecided';
+
+                if (wasPinch && isTerminalSession()) {
                     var client = getActiveClient();
                     if (client && client.clientProperties) {
                         syncTerminalSize(client.clientProperties.scale);

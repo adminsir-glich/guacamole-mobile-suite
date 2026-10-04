@@ -173,17 +173,17 @@ body.keyboard-active .text-input textarea {
     max-width: calc(100vw - 20px);
 }
 
-/* Minimized Dynamic Island PowerIcon Capsule */
+/* Minimized Dynamic Island PowerIcon Capsule (Compact & Unobtrusive) */
 #guac-mobile-pill.minimized {
-    padding: 0 12px;
+    padding: 0 8px;
     border-radius: 9999px;
     width: auto;
-    min-width: 86px;
-    height: 38px;
+    min-width: 58px;
+    height: 26px;
     justify-content: center;
     background: rgba(15, 23, 42, 0.94);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.45);
-    border: 1px solid rgba(56, 189, 248, 0.55);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(56, 189, 248, 0.35);
+    border: 1px solid rgba(56, 189, 248, 0.45);
     cursor: grab;
     touch-action: none;
     user-select: none;
@@ -205,8 +205,8 @@ body.keyboard-active .text-input textarea {
     display: none;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 4px;
+    font-size: 11px;
     font-weight: 700;
     color: #38bdf8;
     line-height: 1;
@@ -219,33 +219,27 @@ body.keyboard-active .text-input textarea {
     display: flex !important;
 }
 
-.pill-mini-icon {
-    font-size: 16px;
-    line-height: 1;
-    color: #38bdf8;
-    text-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+.pill-mini-power-svg {
+    display: block;
+    width: 13px;
+    height: 13px;
+    stroke: #38bdf8;
+    filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.7));
 }
 
 .pill-mini-text {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #e2e8f0;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
+    line-height: 1;
 }
 
 .pill-mini-expand {
-    font-size: 12px;
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.75);
     font-weight: 800;
-}
-
-.pill-live-dot {
-    width: 8px;
-    height: 8px;
-    background: #34d399;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #34d399;
-    animation: guacPulse 2s infinite;
+    line-height: 1;
 }
 
 @keyframes guacPulse {
