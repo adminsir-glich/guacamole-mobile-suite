@@ -1426,11 +1426,165 @@
         });
     }
 
-    // Auto-Fullscreen when clicking any connection / instance link from home menu
+    // --- Root Password Verification Modal for Privileged Connections ---
+    function showRootPasswordPrompt(targetHref, callback) {
+        var old = document.getElementById('guac-root-auth-modal');
+        if (old) old.remove();
+
+        var overlay = document.createElement('div');
+        overlay.id = 'guac-root-auth-modal';
+        overlay.style.cssText = [
+            'position: fixed',
+            'top: 0',
+            'left: 0',
+            'width: 100vw',
+            'height: 100vh',
+            'background: rgba(0, 0, 0, 0.75)',
+            'backdrop-filter: blur(8px)',
+            '-webkit-backdrop-filter: blur(8px)',
+            'z-index: 999999',
+            'display: flex',
+            'align-items: center',
+            'justify-content: center',
+            'font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+        ].join(';');
+
+        var box = document.createElement('div');
+        box.style.cssText = [
+            'background: #1e222d',
+            'border: 1px solid rgba(255, 255, 255, 0.15)',
+            'border-radius: 14px',
+            'padding: 24px',
+            'width: 90%',
+            'max-width: 400px',
+            'box-shadow: 0 20px 40px rgba(0,0,0,0.6)',
+            'color: #f3f4f6',
+            'display: flex',
+            'flex-direction: column',
+            'gap: 16px',
+            'animation: guacPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+        ].join(';');
+
+        box.innerHTML = [
+            '<style>@keyframes guacPopIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }</style>',
+            '<div style="display:flex; align-items:center; gap:12px;">',
+            '  <div style="font-size: 26px; width:46px; height:46px; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239,68,68,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center;">🔒</div>',
+            '  <div>',
+            '    <div style="font-weight: 700; font-size: 17px; color: #fff;">Root Password Required</div>',
+            '    <div style="font-size: 13px; color: #9ca3af; margin-top:2px;">Administrative privilege confirmation</div>',
+            '  </div>',
+            '</div>',
+            '<div style="font-size: 13px; color: #d1d5db; line-height: 1.4;">Please enter the system root password to unlock this privileged connection:</div>',
+            '<div style="position:relative;">',
+            '  <input type="password" id="guac-root-pwd-input" autocomplete="off" placeholder="Root Password" style="width:100%; box-sizing:border-box; padding: 11px 40px 11px 12px; background: #11141c; border: 1px solid #374151; border-radius: 8px; color: #fff; font-size: 15px; outline: none; transition: border-color 0.2s;" />',
+            '  <button type="button" id="guac-root-pwd-toggle" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#9ca3af; cursor:pointer; font-size:16px; padding:4px;">👁️</button>',
+            '</div>',
+            '<div id="guac-root-pwd-error" style="display:none; color:#f87171; font-size:12px; font-weight:500; margin-top:-8px;">❌ Incorrect root password. Access denied.</div>',
+            '<div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 4px;">',
+            '  <button id="guac-root-btn-cancel" style="padding: 9px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #d1d5db; font-size: 14px; font-weight: 500; cursor: pointer;">Cancel</button>',
+            '  <button id="guac-root-btn-ok" style="padding: 9px 18px; background: #ef4444; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display:flex; align-items:center; gap:6px;">Connect as Root</button>',
+            '</div>'
+        ].join('');
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        var input = document.getElementById('guac-root-pwd-input');
+        var err = document.getElementById('guac-root-pwd-error');
+        var btnOk = document.getElementById('guac-root-btn-ok');
+        var btnCancel = document.getElementById('guac-root-btn-cancel');
+        var toggle = document.getElementById('guac-root-pwd-toggle');
+
+        setTimeout(function() { if (input) input.focus(); }, 60);
+
+        if (toggle && input) {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                input.type = input.type === 'password' ? 'text' : 'password';
+            });
+        }
+
+        function close() {
+            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }
+
+        function verify() {
+            var val = input ? input.value : '';
+            // Verify root password (Server@MALIK168)
+            if (val === 'Server@MALIK168') {
+                close();
+                if (callback) callback();
+            } else {
+                if (err) err.style.display = 'block';
+                if (input) {
+                    input.style.borderColor = '#ef4444';
+                    input.value = '';
+                    input.focus();
+                }
+            }
+        }
+
+        if (btnCancel) {
+            btnCancel.addEventListener('click', function(e) {
+                e.preventDefault();
+                close();
+            });
+        }
+
+        if (btnOk) {
+            btnOk.addEventListener('click', function(e) {
+                e.preventDefault();
+                verify();
+            });
+        }
+
+        if (input) {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    verify();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    close();
+                }
+            });
+        }
+    }
+
+    // Intercept clicks on Root connections to require root password
     document.addEventListener('click', function(e) {
+        var link = e.target.closest('a[href*="#/client/"]') || e.target.closest('.connection');
+        if (link) {
+            var text = (link.textContent || '').trim();
+            var href = link.getAttribute('href') || (link.querySelector('a[href*="#/client/"]') ? link.querySelector('a[href*="#/client/"]').getAttribute('href') : '');
+            if (href) {
+                var isRoot = /root/i.test(text) || /root/i.test(decodeURIComponent(href));
+                if (!isRoot && href.indexOf('#/client/') === 0) {
+                    try {
+                        var idPart = href.substring(9).split('?')[0];
+                        var decoded = atob(idPart);
+                        if (/root/i.test(decoded)) isRoot = true;
+                    } catch (err) {}
+                }
+
+                if (isRoot && !window._guac_root_authorized) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showRootPasswordPrompt(href, function() {
+                        window._guac_root_authorized = true;
+                        window.location.hash = href;
+                        setTimeout(function() {
+                            window._guac_root_authorized = false;
+                        }, 4000);
+                    });
+                    return;
+                }
+            }
+        }
+
         if (!isTouchDevice()) return;
-        var link = e.target.closest('a') || e.target.closest('.connection') || e.target.closest('[href*="#/client/"]');
-        if (link && !isFullscreen()) {
+        var tLink = e.target.closest('a') || e.target.closest('.connection') || e.target.closest('[href*="#/client/"]');
+        if (tLink && !isFullscreen()) {
             var docEl = document.documentElement;
             if (docEl.requestFullscreen) docEl.requestFullscreen().catch(function() {});
             else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
@@ -1438,7 +1592,30 @@
     }, { capture: true });
 
     // Hook AngularJS modules run block
-    angular.module('index').run(['$rootScope', function($rootScope) {
+    angular.module('index').run(['$rootScope', '$location', function($rootScope, $location) {
+
+        // Intercept route transitions to root connections
+        $rootScope.$on('$routeChangeStart', function(event, next) {
+            if (!next || !next.params || !next.params.id) return;
+            var id = next.params.id;
+            var isRoot = /root/i.test(id);
+            if (!isRoot) {
+                try {
+                    var decoded = atob(id.split('?')[0]);
+                    if (/root/i.test(decoded)) isRoot = true;
+                } catch(e) {}
+            }
+            if (isRoot && !window._guac_root_authorized) {
+                event.preventDefault();
+                showRootPasswordPrompt('#/client/' + id, function() {
+                    window._guac_root_authorized = true;
+                    $location.path('/client/' + id);
+                    setTimeout(function() {
+                        window._guac_root_authorized = false;
+                    }, 4000);
+                });
+            }
+        });
 
         // Auto-Fullscreen on first touch inside client view
         window.addEventListener('touchstart', function handleFirstTouch() {
