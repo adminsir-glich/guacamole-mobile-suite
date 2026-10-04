@@ -295,6 +295,13 @@ body.keyboard-active .text-input textarea {
     background: rgba(255, 255, 255, 0.25);
 }
 
+.pill-btn.btn-home {
+    background: rgba(14, 165, 233, 0.25);
+    border-color: rgba(14, 165, 233, 0.55);
+    color: #38bdf8;
+    font-weight: 700;
+}
+
 .pill-btn.btn-mode-trackpad {
     background: rgba(16, 185, 129, 0.25);
     border-color: rgba(16, 185, 129, 0.5);
@@ -425,6 +432,13 @@ body.is-terminal-session #guac-mobile-term-bar {
     border-color: #38bdf8 !important;
     color: #ffffff !important;
     box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.term-key-btn.btn-home {
+    background: rgba(14, 165, 233, 0.28) !important;
+    border-color: rgba(14, 165, 233, 0.6) !important;
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
 }
 
 .term-key-btn.btn-ctrl-c {

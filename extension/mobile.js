@@ -38,7 +38,6 @@
         lastClipboardText: '',
         twoFinger: {
             active: false,
-            mode: 'undecided', // 'undecided', 'scroll', 'pinch'
             initialDist: 0,
             initialScale: 1.0,
             initialMidX: 0,
@@ -49,8 +48,12 @@
             focalY: 0,
             lastT1Y: 0,
             lastT2Y: 0,
+            lastT1X: 0,
+            lastT2X: 0,
             accumulatedY: 0,
             lastToastTime: 0,
+            isTrackpad: false,
+            didZoom: false,
             startTime: 0
         },
         touchScroll: {
@@ -618,6 +621,32 @@
         }
     }
 
+    function isTrackpadModeActive() {
+        var clientView = document.querySelector('.client-view');
+        if (!clientView) return false;
+        try {
+            var scope = angular.element(clientView).scope();
+            return scope && scope.menu && (scope.menu.emulateAbsoluteMouse === false);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function goHome() {
+        if (isFullscreen()) {
+            if (document.exitFullscreen) document.exitFullscreen().catch(function() {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+
+        var pill = document.getElementById('guac-mobile-pill');
+        if (pill) pill.style.display = 'none';
+        var bar = document.getElementById('guac-mobile-term-bar');
+        if (bar) bar.classList.remove('visible');
+
+        window.location.hash = '#/';
+        showToast('🏠 Returning to Home');
+    }
+
     // Create the Floating Quick-Pill (FAB) with Dynamic Island UI/UX
     function createMobilePill() {
         if (document.getElementById('guac-mobile-pill')) return;
@@ -628,6 +657,9 @@
         pill.innerHTML = [
             '<button class="pill-btn btn-drag-handle" title="Hold & Drag to move pill"><span>✥</span><span>Move</span></button>',
             '<div class="pill-content">',
+            '  <button class="pill-btn btn-home" title="Go to Guacamole Home Page">',
+            '    <span>🏠</span><span>Home</span>',
+            '  </button>',
             '  <button class="pill-btn btn-mode-toggle btn-mode-trackpad" title="Toggle Trackpad / Direct Touch">',
             '    <span>🖱️</span><span>Trackpad</span>',
             '  </button>',
@@ -652,6 +684,7 @@
 
         document.body.appendChild(pill);
 
+        var homeBtn = pill.querySelector('.btn-home');
         var modeBtn = pill.querySelector('.btn-mode-toggle');
         var kbBtn = pill.querySelector('.btn-keyboard');
         var fullBtn = pill.querySelector('.btn-fullscreen');
@@ -661,6 +694,7 @@
         var zResetBtn = pill.querySelector('.btn-zoom-reset');
         var minBtn = pill.querySelector('.btn-mini-toggle');
 
+        if (homeBtn) homeBtn.addEventListener('click', function(e) { e.stopPropagation(); goHome(); });
         modeBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleMouseMode(); });
         kbBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleNativeKeyboard(); });
         fullBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleFullscreen(); });
@@ -836,6 +870,7 @@
         bar.id = 'guac-mobile-term-bar';
 
         var keys = [
+            { label: '🏠 Home', home: true },
             { label: '⌨️ Keyboard', kbToggle: true },
             { label: 'ESC', sym: KEYSYMS.ESC },
             { label: 'TAB', sym: KEYSYMS.TAB },
@@ -856,7 +891,8 @@
         keys.forEach(function(k) {
             var btn = document.createElement('button');
             var cls = 'term-key-btn';
-            if (k.kbToggle) cls += ' btn-kb-toggle';
+            if (k.home) cls += ' btn-home';
+            else if (k.kbToggle) cls += ' btn-kb-toggle';
             else if (k.ctrlC) cls += ' btn-ctrl-c';
             else if (k.copy) cls += ' btn-copy';
             else if (k.paste) cls += ' btn-paste';
@@ -868,7 +904,9 @@
                 e.preventDefault();
                 e.stopPropagation();
 
-                if (k.kbToggle) {
+                if (k.home) {
+                    goHome();
+                } else if (k.kbToggle) {
                     toggleNativeKeyboard();
                 } else if (k.ctrlC) {
                     sendCtrlC();
@@ -1071,7 +1109,6 @@
                         : (mainEl ? mainEl.scrollTop : 0);
 
                     state.twoFinger.active = true;
-                    state.twoFinger.mode = 'undecided';
                     state.twoFinger.initialDist = dist;
                     state.twoFinger.initialScale = curScale;
                     state.twoFinger.initialMidX = midX;
@@ -1082,8 +1119,12 @@
                     state.twoFinger.focalY = (midY + curScrollTop) / curScale;
                     state.twoFinger.lastT1Y = t1.clientY;
                     state.twoFinger.lastT2Y = t2.clientY;
+                    state.twoFinger.lastT1X = t1.clientX;
+                    state.twoFinger.lastT2X = t2.clientX;
                     state.twoFinger.accumulatedY = 0;
                     state.twoFinger.startTime = Date.now();
+                    state.twoFinger.isTrackpad = isTrackpadModeActive();
+                    state.twoFinger.didZoom = false;
 
                     clearTimeout(state.touchScroll.longPressTimer);
                     state.touchScroll.active = false;
@@ -1126,7 +1167,7 @@
                 return;
             }
 
-            // 1. Two-Finger Gestures (Trackpad Page Scroll & Google Maps 2D Glide Zoom)
+            // 1. Two-Finger Gestures (Google Maps 2D Glide & Zoom OR Desktop Trackpad Page Scroll)
             if (state.twoFinger.active && e.touches.length === 2) {
                 var client = getActiveClient();
                 if (client && client.clientProperties && state.twoFinger.initialDist > 0) {
@@ -1136,45 +1177,44 @@
                     var currentMidX = (t1.clientX + t2.clientX) / 2;
                     var currentMidY = (t1.clientY + t2.clientY) / 2;
 
-                    var distRatio = currentDist / state.twoFinger.initialDist;
+                    var distRatio = currentDist / Math.max(state.twoFinger.initialDist, 1);
+                    var distDelta = Math.abs(currentDist - state.twoFinger.initialDist);
+
                     var dy1 = t1.clientY - state.twoFinger.lastT1Y;
                     var dy2 = t2.clientY - state.twoFinger.lastT2Y;
                     var avgDy = (dy1 + dy2) / 2;
+                    var dx1 = t1.clientX - (state.twoFinger.lastT1X || t1.clientX);
+                    var dx2 = t2.clientX - (state.twoFinger.lastT2X || t2.clientX);
+                    var avgDx = (dx1 + dx2) / 2;
 
-                    // Gesture Classifier: Trackpad Page Scroll vs Pinch-to-Zoom
-                    if (state.twoFinger.mode === 'undecided') {
-                        var distDelta = Math.abs(currentDist - state.twoFinger.initialDist);
-                        var movedY = Math.abs(avgDy);
-                        var fingersParallel = (dy1 * dy2 > 0);
+                    state.twoFinger.lastT1Y = t1.clientY;
+                    state.twoFinger.lastT2Y = t2.clientY;
+                    state.twoFinger.lastT1X = t1.clientX;
+                    state.twoFinger.lastT2X = t2.clientX;
 
-                        // If fingers pinched together or spread apart -> Pinch-to-Zoom!
-                        if (distDelta > 25 || distRatio < 0.88 || distRatio > 1.12) {
-                            state.twoFinger.mode = 'pinch';
-                        }
-                        // If fingers moved together in parallel vertically -> Trackpad Page Scroll!
-                        else if (movedY > 5 && fingersParallel) {
-                            state.twoFinger.mode = 'scroll';
-                        }
-                    }
+                    // Condition for Trackpad Page Scroll:
+                    // Only active in Trackpad Mode (Desktop), when fitted to screen (scale <= 0.32),
+                    // moving strictly vertically in parallel without pinching.
+                    var isTrackpadScroll = (
+                        state.twoFinger.isTrackpad &&
+                        !isTerminalSession() &&
+                        state.twoFinger.initialScale <= 0.32 &&
+                        distDelta < 20 &&
+                        (dy1 * dy2 > 0) &&
+                        (Math.abs(avgDy) > Math.abs(avgDx) * 1.5)
+                    );
 
-                    // Mode A: Two-Finger Trackpad Page Scroll (Scrolls web pages, documents, terminals)
-                    if (state.twoFinger.mode === 'scroll') {
+                    if (isTrackpadScroll) {
                         state.twoFinger.accumulatedY += avgDy;
-                        state.twoFinger.lastT1Y = t1.clientY;
-                        state.twoFinger.lastT2Y = t2.clientY;
-
-                        // 15px step = 1 wheel click
-                        var scrollThreshold = 15;
+                        var scrollThreshold = 14;
                         if (Math.abs(state.twoFinger.accumulatedY) >= scrollThreshold) {
-                            // Swiping fingers up (avgDy < 0) scrolls page down (content moves up)
-                            // Swiping fingers down (avgDy > 0) scrolls page up (content moves down)
                             var dir = (state.twoFinger.accumulatedY < 0) ? 'down' : 'up';
                             sendRemoteScroll(dir, currentMidX, currentMidY);
                             state.twoFinger.accumulatedY %= scrollThreshold;
                         }
-                    }
-                    // Mode B: Google Maps 2D Glide & Zoom
-                    else if (state.twoFinger.mode === 'pinch') {
+                    } else {
+                        // Unconditional Google Maps 2D Glide & Zoom across the entire instance!
+                        state.twoFinger.didZoom = true;
                         patchClientScale(client);
                         var newScale = state.twoFinger.initialScale * distRatio;
                         var minS = 0.05;
@@ -1203,7 +1243,7 @@
                         }
 
                         var now = Date.now();
-                        if (now - state.twoFinger.lastToastTime > 350) {
+                        if (distDelta > 15 && now - state.twoFinger.lastToastTime > 350) {
                             state.twoFinger.lastToastTime = now;
                             showToast('🔍 ' + Math.round(newScale * 100) + '%');
                         }
@@ -1249,11 +1289,11 @@
 
             // 1. End two-finger gesture
             if (state.twoFinger.active && e.touches.length < 2) {
-                var wasPinch = (state.twoFinger.mode === 'pinch');
+                var wasZoom = state.twoFinger.didZoom;
                 state.twoFinger.active = false;
-                state.twoFinger.mode = 'undecided';
+                state.twoFinger.didZoom = false;
 
-                if (wasPinch && isTerminalSession()) {
+                if (wasZoom && isTerminalSession()) {
                     var client = getActiveClient();
                     if (client && client.clientProperties) {
                         syncTerminalSize(client.clientProperties.scale);

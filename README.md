@@ -274,6 +274,7 @@ location /guacamole/ {
 | **Relative Trackpad Toggle** | Tap `[ 🖱️ Trackpad ]` / `[ 👆 Direct ]` | Switch between laptop-style relative cursor navigation and direct touch |
 | **Copy Selected Text** | Long-press (> 1.8s) or `[ 📋 Copy ]` | Copies active selection with haptic feedback |
 | **Paste into Terminal** | Tap `[ 📋 Paste ]` | Injects system clipboard directly into the remote session |
+| **Instant Home Return** | Tap `[ 🏠 Home ]` | Instantly exits active session, gracefully leaves fullscreen, and returns to Guacamole home menu |
 | **Toggle Fullscreen** | Tap `[ ⛶ Full Screen ]` / `[ ✕ Exit Full ]` | Hides mobile browser address bar for maximum display area |
 
 ---
