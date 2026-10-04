@@ -27,47 +27,42 @@ Running a **Desktop in Linux** via a web browser is one of the most powerful way
 
 ## ✨ Features & Mobile Superpowers
 
-### 1. 🔍 Unlocked Dynamic Zoom & Smart Screen-Fit
-- **Zoom Smaller Than 38%**: Bypasses Guacamole's rigid `minScale` limit. Zoom down to **`5%` or `10%`** to view massive ultra-wide workspaces, or zoom in up to **`500%`** for pixel-level precision.
-- **`[ 📐 Fit ]` Button**: Instantly snaps the desktop to the exact **38% screen-fit** that displays the entire instance without any side clipping.
-- **`[ 1:1 ]` Button**: Instantly jumps to **100% true native resolution** for crisp, uncompressed desktop viewing.
-- **Butter-Smooth 2-Finger Pinch**: Multi-touch pinch gestures are intercepted in the DOM capture phase, giving fluid pinch-to-zoom on both remote desktops and SSH terminals.
+### 1. 🗺️ Google Maps-Style 2-Finger Omnidirectional Pan & Glide Zoom
+- **Simultaneous 2D Glide & Zoom**: Just like Google Maps, pinch-zooming is anchored to the midpoint between your two fingers and allows simultaneous fluid gliding/panning in **all directions (X and Y)** across the entire remote desktop.
+- **Reach Any Part of the Instance**: Effortlessly navigate across multi-monitor setups, wide IDEs, or large browser windows without getting locked into a single axis.
+- **Bypasses 38% Lock**: Freely zoom down to **`5%`** or up to **`500%`**, with dedicated **`[ 📐 Fit ]`** and **`[ 1:1 ]`** buttons for instant snap-to-fit.
 
-### 2. ⬛ Terminal 1-Finger Touch Scrolling & 70vh Overscroll Black Space
-- **Never Lose Sight of the Prompt**: Standard Guacamole stops scrolling as soon as you hit the bottom line of the scrollback buffer. When the mobile keyboard opens, your command line gets hidden behind the keyboard.
-- **70vh Overscroll Buffer**: Adds $70\%$ viewport height of clean black space below the terminal display.
-- **Simultaneous Viewport & Buffer Scrolling**: Swiping up with one finger glides the prompt up into the middle of your screen, revealing clean black space underneath—exactly like a real Linux terminal emulator.
+### 2. 💻 Edge-to-Edge Terminal with Dynamic PTY Character Reflow
+- **No Floating Windows**: Completely eliminates table-cell centering and padding hacks that made the terminal look like a small window in a black void. The terminal occupies **100% of the screen width and height**.
+- **Dynamic Character Reflow (`SIGWINCH`)**: When zooming in or out, the extension calculates effective terminal dimensions and triggers Guacamole's PTY resize (`client.sendSize()`). Real Linux shells (bash, zsh, tmux) reflow text columns dynamically across the full width, exactly like native mobile emulators (Termux, JuiceSSH).
+- **1-Finger Smooth Buffer Scroll**: Effortlessly swipe vertically to scroll through your command history and output buffer without triggering unwanted viewport shifts.
 
-### 3. ⌨️ Native Soft Keyboard Auto-Focus (Zero Clunky OSKs)
-- **Real Phone Keyboard**: Permanently hides `<guac-osk>` so your native phone keyboard (Gboard, Samsung, iOS) always appears.
-- **Tap-to-Type in Terminals**: Simply tap the terminal canvas, and your native keyboard pops up immediately.
-- **One-Tap Dismissal**: Dedicated `[ ✕ ⌨️ ]` button hides the keyboard instantly.
-- **Desktop Keyboard Summoning**: Tap `[ ⌨️ Keyboard ]` on the floating control center to type into desktop browsers, editors, and IDEs.
+### 3. ⌨️ Strict Keyboard Policy & Dedicated Bar Toggle Button
+- **Zero Unwanted Keyboard Popups**: Under **NO** circumstance does the native mobile keyboard auto-summon on terminal touch, tap, scroll, or page load.
+- **Persistent Mobile Terminal Bar**: In terminal sessions, the bottom shortcut bar is always visible and features a prominent `[ ⌨️ Keyboard ]` button at the front.
+- **Explicit 1-Tap Toggle**: Tap `[ ⌨️ Keyboard ]` to summon your native keyboard (Gboard, Samsung, iOS); tap again or tap `[ ✕ ⌨️ ]` to dismiss.
 
-### 4. 🏝️ Dynamic Island Minimized Control Capsule (Best in UI/UX)
-- **Apple Dynamic Island Glassmorphism**: When minimized, the control center shrinks into an ultra-sleek **$62\text{px} \times 36\text{px}$** floating capsule (`rgba(15, 23, 42, 0.90)` frosted glass with blur and glowing cyan edge).
-- **Breathing Live Status Orb**: Contains a pulsating emerald live indicator (`.pill-live-dot`) and remote screen icon (`⚡`).
-- **Spring Physics**: Smooth spring animations when expanding or minimizing.
-- **Draggable**: Drag and dock the pill anywhere on your screen.
+### 4. ✥ Dedicated Move Handle & Minimized Dynamic Island
+- **Dedicated `[ ✥ Move ]` Handle**: A distinct move button beside the pill controls allows immediate touch-dragging to reposition the pill anywhere on screen.
+- **Apple Dynamic Island Glassmorphism**: When minimized, the control center collapses into a compact floating capsule with a pulsing emerald status indicator (`.pill-live-dot`), desktop icon (`🖥️`), and expand glyph (`⤢`).
+- **Drag or Tap Minimized Pill**: Drag the minimized capsule anywhere on screen, or tap it once to expand back to the full control center with subtle haptic feedback.
 
-### 5. 📋 Standard Mobile Long-Press Copy (> 1.8s)
-- **No Accidental Copies**: Removes aggressive auto-copying on simple drags or scrolls.
-- **Mobile Standard Gesture**: Press and hold on any word or output in the terminal for **1.8 seconds**.
-- **Haptic Feedback**: The phone provides a subtle vibration buzz to confirm selection and copies the text directly to your device clipboard.
-- **Active Controls**: Includes dedicated `[ 📋 Copy ]` and `[ 📋 Paste ]` buttons on the mobile bar.
+### 5. 📋 Standard Mobile Long-Press Copy (> 1.8s) & Active Clipboard Controls
+- **Accidental Copy Prevention**: Eliminates intrusive auto-copy on simple scrolls or taps.
+- **Standard Long-Press**: Press and hold on text for **1.8 seconds** with haptic vibration feedback to copy directly to device clipboard.
+- **Active Controls**: Includes dedicated `[ 📋 Copy ]` and `[ 📋 Paste ]` buttons directly on the terminal helper bar.
 
 ### 6. 🖱️ Full-Screen Relative Trackpad Mode
-- **Independent Cursor Glide**: Swiping anywhere on your screen glides the remote mouse cursor relatively in that direction; tapping clicks at the cursor.
-- **Edge Following**: The viewport automatically follows the cursor across the full 100% desktop.
-- **One-Tap Mode Switch**: Toggle between `[ 🖱️ Trackpad ]` and `[ 👆 Direct ]` touch at any moment.
+- **Laptop-Style Trackpad**: Swipe anywhere across the screen to glide the cursor relatively; tap to click.
+- **Mode Switching**: One-tap toggle between `[ 🖱️ Trackpad ]` and `[ 👆 Direct Touch ]`.
 
 ### 7. 🛡️ Dynamic Viewport Keyboard Clearance (+16px Margin)
-- Uses the modern `window.visualViewport` API to detect when the virtual keyboard slides up.
-- Automatically lifts the shortcut helper bar with **`+16px` safe clearance**, ensuring keys (`Esc`, `Tab`, `Ctrl`, `Alt`, arrows, `PgUp`, `PgDn`, `Copy`, `Paste`) are 100% visible and never clipped under the keyboard.
+- Uses `window.visualViewport` to track virtual keyboard position.
+- Safely lifts the terminal shortcut bar with **`+16px` clearance**, keeping keys (`Esc`, `Tab`, `Ctrl`, `Alt`, arrows, `PgUp`, `PgDn`) accessible above the keyboard.
 
 ### 8. ⛶ Edge-to-Edge Fullscreen Toggle
-- Tapping any connection automatically requests native browser fullscreen.
-- Prominent `[ ⛶ Full Screen ]` / `[ ✕ Exit Full ]` buttons allow you to instantly reveal Chrome / Safari address bars and navigation tabs, or return to full screen.
+- Automatically enters fullscreen on connection selection.
+- Clear `[ ⛶ Full Screen ]` and `[ ✕ Exit Full ]` buttons to quickly show browser address bars or hide them.
 
 ---
 

@@ -50,7 +50,7 @@ guac-osk {
 }
 
 /* =========================================================================
-   Terminal Full Black Theme & Overscroll Padding
+   Terminal Edge-to-Edge Screen Fill & Pure Black Background (No Floating Window!)
    ========================================================================= */
 .client-view.terminal-session,
 .client-view.terminal-session .client-body,
@@ -60,15 +60,62 @@ guac-osk {
     background: #000000 !important;
 }
 
+.client-view.terminal-session {
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+.client-view.terminal-session .client-body {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
 .client-view.terminal-session div.main {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
 }
 
 .client-view.terminal-session div.displayOuter {
-    min-height: 100% !important;
-    padding-bottom: 70vh !important;
-    box-sizing: content-box !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.client-view.terminal-session div.displayMiddle {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+}
+
+.client-view.terminal-session div.display {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.client-view.terminal-session div.display canvas {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* =========================================================================
@@ -104,23 +151,25 @@ guac-osk {
 
 /* Minimized Dynamic Island Capsule */
 #guac-mobile-pill.minimized {
-    padding: 0 12px;
+    padding: 0 14px;
     border-radius: 9999px;
-    width: 62px;
-    height: 36px;
+    width: 78px;
+    height: 38px;
     justify-content: center;
-    background: rgba(15, 23, 42, 0.90);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(56, 189, 248, 0.4);
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    cursor: pointer;
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), 0 0 16px rgba(56, 189, 248, 0.45);
+    border: 1px solid rgba(56, 189, 248, 0.55);
+    cursor: grab;
+    touch-action: none;
 }
 
 #guac-mobile-pill.minimized:active {
-    transform: scale(0.92);
+    transform: scale(0.93);
+    cursor: grabbing;
 }
 
 #guac-mobile-pill.minimized .pill-content,
-#guac-mobile-pill.minimized .pill-drag-handle {
+#guac-mobile-pill.minimized .btn-drag-handle {
     display: none !important;
 }
 
@@ -129,15 +178,28 @@ guac-osk {
     display: none;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
     font-size: 13px;
     font-weight: 700;
     color: #38bdf8;
     line-height: 1;
+    cursor: grab;
 }
 
 #guac-mobile-pill.minimized .pill-mini-badge {
     display: flex !important;
+}
+
+.pill-mini-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.pill-mini-expand {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 800;
+    transition: transform 0.15s ease;
 }
 
 .pill-live-dot {
@@ -155,12 +217,22 @@ guac-osk {
     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
 }
 
-.pill-drag-handle {
-    cursor: grab;
-    color: rgba(255, 255, 255, 0.4);
-    padding: 0 4px;
-    font-size: 13px;
-    line-height: 1;
+/* Dedicated Drag / Move Handle Button */
+.pill-btn.btn-drag-handle {
+    background: rgba(255, 255, 255, 0.14) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: #f1f5f9 !important;
+    cursor: grab !important;
+    padding: 6px 9px !important;
+    font-weight: 700 !important;
+    gap: 3px !important;
+}
+
+.pill-btn.btn-drag-handle:active {
+    cursor: grabbing !important;
+    background: rgba(56, 189, 248, 0.35) !important;
+    border-color: rgba(56, 189, 248, 0.7) !important;
+    color: #38bdf8 !important;
 }
 
 .pill-content {
@@ -265,8 +337,27 @@ guac-osk {
     transition: bottom 0.12s ease-out;
 }
 
-#guac-mobile-term-bar.visible {
+#guac-mobile-term-bar.visible,
+.client-view.terminal-session ~ #guac-mobile-term-bar,
+body.is-terminal-session #guac-mobile-term-bar {
     display: flex !important;
+}
+
+/* Dedicated Keyboard Toggle Button on Terminal Helper Bar */
+.term-key-btn.btn-kb-toggle {
+    background: rgba(139, 92, 246, 0.32) !important;
+    border-color: rgba(167, 139, 250, 0.7) !important;
+    color: #f3e8ff !important;
+    font-weight: 700 !important;
+    padding: 0 11px !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.35) !important;
+}
+
+.term-key-btn.btn-kb-toggle.kb-active {
+    background: #7c3aed !important;
+    border-color: #c084fc !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(192, 132, 252, 0.75) !important;
 }
 
 /* Terminal Key Buttons */
