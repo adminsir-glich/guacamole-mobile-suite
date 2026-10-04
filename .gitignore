@@ -10,6 +10,8 @@ Thumbs.db
 
 # Sensitive user credential files
 user-mapping.xml
+docker/user-mapping.xml
+docker/extensions/
 *.key
 *.pem
 *.pfx

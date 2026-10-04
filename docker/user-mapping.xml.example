@@ -2,45 +2,64 @@
     <!-- 
       SAMPLE USER MAPPING CONFIGURATION
       Replace all sample usernames, passwords, and IP addresses with your own.
-      Passwords can be stored in plaintext or as SHA-256 hashes.
+      NOTE ON HOSTNAME:
+      - If guacd runs inside Docker and your desktop/SSH is on the host server,
+        use your Docker bridge gateway IP (e.g. 172.17.0.1 or 172.26.0.1), NOT 127.0.0.1.
+      - If everything runs on bare-metal (no Docker), 127.0.0.1 is correct.
     -->
     <authorize username="sample_user" password="SampleStrongPassword123!">
 
-        <!-- 1. Full Linux Desktop (VNC) -->
-        <connection name="Ubuntu Desktop (VNC)">
+        <!-- 1. [SHARED] Live Mirror & Collaborative Workspace (VNC) -->
+        <!-- Multiple users can connect to this same port simultaneously without disconnecting each other -->
+        <connection name="[SHARED] Ubuntu Desktop (Live Mirror - Collaborate)">
             <protocol>vnc</protocol>
-            <param name="hostname">127.0.0.1</param>
+            <param name="hostname">172.17.0.1</param>
             <param name="port">5901</param>
             <param name="password">VncDesktopPassword123!</param>
             <param name="color-depth">24</param>
+            <param name="autoretry">3</param>
             <param name="enable-audio">true</param>
-            <param name="audio-servername">127.0.0.1</param>
         </connection>
 
-        <!-- 2. High-Performance Linux Desktop (RDP with Audio & Drive Redirection) -->
-        <connection name="Ubuntu Desktop (RDP)">
+        <!-- 2. [PRIVATE] High-Performance Dedicated Workspace (RDP) -->
+        <!-- Locked to native Full HD (1920x1080) for highest crisp resolution -->
+        <connection name="[PRIVATE] Ubuntu Desktop (Dedicated 1080p Workspace)">
             <protocol>rdp</protocol>
-            <param name="hostname">127.0.0.1</param>
+            <param name="hostname">172.17.0.1</param>
             <param name="port">3389</param>
             <param name="username">sample_user</param>
             <param name="password">SampleStrongPassword123!</param>
             <param name="security">any</param>
             <param name="ignore-cert">true</param>
+            <param name="width">1920</param>
+            <param name="height">1080</param>
+            <param name="dpi">96</param>
+            <param name="color-depth">32</param>
+            <param name="enable-font-smoothing">true</param>
             <param name="enable-audio">true</param>
             <param name="enable-audio-input">true</param>
-            <param name="resize-method">reconnect</param>
-            <param name="color-depth">24</param>
-            <param name="enable-font-smoothing">true</param>
             <param name="enable-drive">true</param>
             <param name="drive-path">/tmp/guac-drive</param>
             <param name="drive-name">CloudDrive</param>
             <param name="create-drive-path">true</param>
         </connection>
 
-        <!-- 3. Supercharged SSH Terminal (Enhanced for Mobile with 10k Scrollback) -->
+        <!-- 3. [VIEW-ONLY] Live Spectator Workspace (VNC Read-Only) -->
+        <!-- Watch the remote desktop in real-time without mouse or keyboard interference -->
+        <connection name="[VIEW-ONLY] Ubuntu Desktop (Live Spectator)">
+            <protocol>vnc</protocol>
+            <param name="hostname">172.17.0.1</param>
+            <param name="port">5901</param>
+            <param name="password">VncDesktopPassword123!</param>
+            <param name="read-only">true</param>
+            <param name="color-depth">24</param>
+        </connection>
+
+        <!-- 4. Supercharged SSH Terminal (Enhanced for Mobile with 10k Scrollback) -->
+        <!-- Check your server's actual SSH port (standard 22 or custom e.g. 2222) -->
         <connection name="Linux Cloud Terminal (SSH)">
             <protocol>ssh</protocol>
-            <param name="hostname">127.0.0.1</param>
+            <param name="hostname">172.17.0.1</param>
             <param name="port">22</param>
             <param name="username">sample_user</param>
             <param name="password">SampleStrongPassword123!</param>

@@ -28,7 +28,25 @@
         C: 99
     };
 
-    var DEFAULT_FIT_SCALE = 0.28; // 28% scale to fit entire desktop and terminal screen perfectly
+    function getFitScale(client) {
+        if (!client) client = getActiveClient();
+        var dispW = 1920, dispH = 1080;
+        if (client && client.client && client.client.getDisplay) {
+            try {
+                var disp = client.client.getDisplay();
+                if (disp && disp.getWidth() > 0 && disp.getHeight() > 0) {
+                    dispW = disp.getWidth();
+                    dispH = disp.getHeight();
+                }
+            } catch (e) {}
+        }
+        var vpW = (window.visualViewport ? window.visualViewport.width : window.innerWidth) || window.innerWidth || 1920;
+        var vpH = (window.visualViewport ? window.visualViewport.height : window.innerHeight) || window.innerHeight || 1080;
+
+        var scale = Math.min(vpW / dispW, vpH / dispH);
+        return Math.max(0.05, Math.min(5.0, scale));
+    }
+    var DEFAULT_FIT_SCALE = 1.0;
 
     var state = {
         ctrlSticky: false,
@@ -184,32 +202,50 @@
             document.fullscreenElement ||
             document.webkitFullscreenElement ||
             document.mozFullScreenElement ||
-            document.msFullscreenElement
+            document.msFullscreenElement ||
+            document.webkitIsFullScreen ||
+            (window.fullScreen) ||
+            (window.innerHeight >= screen.height - 4 && window.innerWidth >= screen.width - 4)
         );
     }
 
     function toggleFullscreen() {
-        if (isFullscreen()) {
-            if (document.exitFullscreen) {
-                document.exitFullscreen().catch(function() {});
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();
-            }
-            showToast('Exited Fullscreen (Browser bar restored)');
+        var hasDomFull = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+        );
+
+        if (hasDomFull) {
+            try {
+                var exitFn = document.exitFullscreen ||
+                             document.webkitExitFullscreen ||
+                             document.mozCancelFullScreen ||
+                             document.msExitFullscreen;
+                if (exitFn) {
+                    var p = exitFn.call(document);
+                    if (p && p.catch) p.catch(function() {});
+                }
+            } catch (e) {}
+            showToast('Exited Fullscreen');
+        } else if (window.innerHeight >= screen.height - 4) {
+            showToast('Press [Esc] or [F11] to exit browser fullscreen');
         } else {
             var docEl = document.documentElement;
-            if (docEl.requestFullscreen) {
-                docEl.requestFullscreen().catch(function() {});
-            } else if (docEl.webkitRequestFullscreen) {
-                docEl.webkitRequestFullscreen();
-            } else if (docEl.mozRequestFullScreen) {
-                docEl.mozRequestFullScreen();
-            }
+            try {
+                var reqFn = docEl.requestFullscreen ||
+                            docEl.webkitRequestFullscreen ||
+                            docEl.mozRequestFullScreen ||
+                            docEl.msRequestFullscreen;
+                if (reqFn) {
+                    var p = reqFn.call(docEl);
+                    if (p && p.catch) p.catch(function() {});
+                }
+            } catch (e) {}
             showToast('Entered Fullscreen');
         }
-        setTimeout(updatePillUI, 120);
+        setTimeout(updatePillUI, 200);
     }
 
     function sendKey(keysym) {
@@ -333,7 +369,7 @@
         var client = getActiveClient();
         if (!client || !client.client) return;
 
-        var s = (customScale !== undefined) ? customScale : ((client.clientProperties && client.clientProperties.scale) || DEFAULT_FIT_SCALE);
+        var s = (customScale !== undefined) ? customScale : ((client.clientProperties && client.clientProperties.scale) || getFitScale(client));
         var pixelDensity = window.devicePixelRatio || 1;
 
         var vpHeight = window.innerHeight;
@@ -478,31 +514,10 @@
         window.visualViewport.addEventListener('scroll', updateBarPosition);
     }
 
-    /**
-     * Patches client properties to unlock zooming smaller than 38% (down to 5%).
-     */
     function patchClientScale(client) {
         if (!client || !client.clientProperties || client._scalePatched) return;
         client._scalePatched = true;
-        var props = client.clientProperties;
-
-        client._fitScale = DEFAULT_FIT_SCALE; // 0.28 (28%)
-
-        try {
-            Object.defineProperty(props, 'minScale', {
-                get: function() {
-                    return 0.05; // Unlocks zoom down to 5%!
-                },
-                set: function(val) {
-                    if (val > 0.05) client._fitScale = val;
-                },
-                configurable: true,
-                enumerable: true
-            });
-        } catch (e) {
-            props.minScale = 0.05;
-        }
-        props.maxScale = 5.0;
+        client.clientProperties.maxScale = 5.0;
     }
 
     function setScale(newScale) {
@@ -511,13 +526,17 @@
 
         patchClientScale(client);
 
-        var minS = 0.05;
-        var maxS = 5.0;
+        var minS = client.clientProperties.minScale || 0.1;
+        var maxS = client.clientProperties.maxScale || 5.0;
         newScale = Math.max(minS, Math.min(maxS, newScale));
 
         applyScopeChange(function() {
-            client.clientProperties.autoFit = false;
+            client.clientProperties.autoFit = (Math.abs(newScale - minS) < 0.01);
             client.clientProperties.scale = newScale;
+            if (isTerminalSession()) {
+                client.clientProperties.scrollLeft = 0;
+                client.clientProperties.scrollTop = 0;
+            }
         });
 
         if (isTerminalSession()) {
@@ -532,26 +551,53 @@
         var client = getActiveClient();
         if (!client || !client.clientProperties) return;
         var current = client.clientProperties.scale || 1.0;
-        setScale(current + 0.15);
+        setScale(current * 1.25);
     }
 
     function zoomOut() {
         var client = getActiveClient();
         if (!client || !client.clientProperties) return;
         var current = client.clientProperties.scale || 1.0;
-        setScale(current - 0.10);
+        var minS = client.clientProperties.minScale || 1.0;
+        var next = current * 0.8;
+        if (next <= minS * 1.05) {
+            zoomFit();
+        } else {
+            setScale(next);
+        }
     }
 
     function zoomFit() {
         var client = getActiveClient();
         if (!client || !client.clientProperties) return;
-        // Revert to 28% scale for both desktop and terminal sessions
-        setScale(DEFAULT_FIT_SCALE);
+        patchClientScale(client);
+
+        applyScopeChange(function() {
+            client.clientProperties.autoFit = true;
+            if (client.clientProperties.minScale) {
+                client.clientProperties.scale = client.clientProperties.minScale;
+            }
+            client.clientProperties.scrollLeft = 0;
+            client.clientProperties.scrollTop = 0;
+        });
+
+        var mainEl = document.querySelector('div.main');
+        if (mainEl) {
+            mainEl.scrollLeft = 0;
+            mainEl.scrollTop = 0;
+        }
+
+        if (isTerminalSession()) {
+            debouncedTerminalResize(client.clientProperties.scale || 1.0);
+        }
+
+        showToast('📐 Fit to Screen');
     }
 
     function zoomReset() {
         setScale(1.0);
     }
+
 
     function toggleMouseMode() {
         var clientView = document.querySelector('.client-view');
@@ -670,7 +716,7 @@
             '    <span>⛶</span><span>Full Screen</span>',
             '  </button>',
             '  <button class="pill-btn btn-zoom btn-zoom-out" title="Zoom Out (Down to 5%)">🔍−</button>',
-            '  <button class="pill-btn btn-zoom btn-zoom-fit" title="Fit Entire Screen (28%)">📐 Fit</button>',
+            '  <button class="pill-btn btn-zoom btn-zoom-fit" title="Fit Entire Screen">📐 Fit</button>',
             '  <button class="pill-btn btn-zoom btn-zoom-reset" title="100% Full Resolution">1:1</button>',
             '  <button class="pill-btn btn-zoom btn-zoom-in" title="Zoom In">🔍+</button>',
             '  <button class="pill-btn btn-mini-toggle" title="Minimize Controls">✕</button>',
@@ -1195,10 +1241,11 @@
                     // Condition for Trackpad Page Scroll:
                     // Only active in Trackpad Mode (Desktop), when fitted to screen (scale <= 0.32),
                     // moving strictly vertically in parallel without pinching.
+                    var fitScale = getFitScale(client);
                     var isTrackpadScroll = (
                         state.twoFinger.isTrackpad &&
                         !isTerminalSession() &&
-                        state.twoFinger.initialScale <= 0.32 &&
+                        state.twoFinger.initialScale <= fitScale * 1.15 &&
                         distDelta < 20 &&
                         (dy1 * dy2 > 0) &&
                         (Math.abs(avgDy) > Math.abs(avgDx) * 1.5)
@@ -1221,25 +1268,40 @@
                         var maxS = 5.0;
                         newScale = Math.max(minS, Math.min(maxS, newScale));
 
-                        var newScrollLeft = Math.round((state.twoFinger.focalX * newScale) - currentMidX);
-                        var newScrollTop = Math.round((state.twoFinger.focalY * newScale) - currentMidY);
-
-                        applyScopeChange(function() {
-                            client.clientProperties.autoFit = false;
-                            client.clientProperties.scale = newScale;
-                            client.clientProperties.scrollLeft = newScrollLeft;
-                            client.clientProperties.scrollTop = newScrollTop;
-                        });
-
-                        var mainEl = document.querySelector('div.main');
-                        if (mainEl) {
-                            mainEl.style.overflow = 'auto';
-                            mainEl.scrollLeft = newScrollLeft;
-                            mainEl.scrollTop = newScrollTop;
-                        }
-
                         if (isTerminalSession()) {
+                            // Terminal session: NEVER move terminal screen out of window!
+                            applyScopeChange(function() {
+                                client.clientProperties.autoFit = false;
+                                client.clientProperties.scale = newScale;
+                                client.clientProperties.scrollLeft = 0;
+                                client.clientProperties.scrollTop = 0;
+                            });
+
+                            var mainEl = document.querySelector('div.main');
+                            if (mainEl) {
+                                mainEl.scrollLeft = 0;
+                                mainEl.scrollTop = 0;
+                            }
+
                             debouncedTerminalResize(newScale);
+                        } else {
+                            // Desktop session (RDP/VNC): pan to focal point
+                            var newScrollLeft = Math.round((state.twoFinger.focalX * newScale) - currentMidX);
+                            var newScrollTop = Math.round((state.twoFinger.focalY * newScale) - currentMidY);
+
+                            applyScopeChange(function() {
+                                client.clientProperties.autoFit = false;
+                                client.clientProperties.scale = newScale;
+                                client.clientProperties.scrollLeft = newScrollLeft;
+                                client.clientProperties.scrollTop = newScrollTop;
+                            });
+
+                            var mainEl = document.querySelector('div.main');
+                            if (mainEl) {
+                                mainEl.style.overflow = 'auto';
+                                mainEl.scrollLeft = newScrollLeft;
+                                mainEl.scrollTop = newScrollTop;
+                            }
                         }
 
                         var now = Date.now();
@@ -1329,6 +1391,39 @@
                 e.target.blur();
             }
         }, true);
+        // Laptop trackpad pinch & Ctrl + Wheel zoom support
+        window.addEventListener('wheel', function(e) {
+            if (!e.ctrlKey) return; // Allow normal wheel scrolling to pass through to remote desktop
+            e.preventDefault();
+
+            var client = getActiveClient();
+            if (!client || !client.clientProperties) return;
+
+            var current = client.clientProperties.scale || getFitScale(client);
+            var fit = getFitScale(client);
+            var factor = e.deltaY < 0 ? 1.15 : 0.88;
+            var newScale = current * factor;
+
+            if (factor < 1.0 && newScale <= fit * 1.05) {
+                zoomFit();
+            } else {
+                setScale(newScale);
+            }
+        }, { passive: false });
+
+        // Responsive auto-fit on window resize (laptops, rotated phones, window maximize/restore)
+        window.addEventListener('resize', function() {
+            var client = getActiveClient();
+            if (client && client.clientProperties && client.clientProperties.autoFit) {
+                var fit = getFitScale(client);
+                applyScopeChange(function() {
+                    client.clientProperties.scale = fit;
+                });
+                if (isTerminalSession()) {
+                    debouncedTerminalResize(fit);
+                }
+            }
+        });
     }
 
     // Auto-Fullscreen when clicking any connection / instance link from home menu
@@ -1392,7 +1487,13 @@
                 setupGlobalGestures();
 
                 var pill = document.getElementById('guac-mobile-pill');
-                if (pill) pill.style.display = isTouchDevice() ? 'flex' : 'none';
+                if (pill) {
+                    pill.style.display = 'flex';
+                    if (!isTouchDevice()) {
+                        pill.classList.add('minimized');
+                        state.pillMinimized = true;
+                    }
+                }
 
                 var client = getActiveClient();
                 var clientView = document.querySelector('.client-view');
@@ -1401,24 +1502,30 @@
                     if (clientView) clientView.classList.add('terminal-session');
                     document.body.classList.add('is-terminal-session');
                     var bar = document.getElementById('guac-mobile-term-bar');
-                    if (bar) bar.classList.add('visible');
-                    // Revert terminal to 28% scale (0.28) so it fits without leaving the screen!
-                    setScale(DEFAULT_FIT_SCALE);
-                    syncTerminalSize(DEFAULT_FIT_SCALE);
-                    // NOTE: Mobile keyboard will NOT open until user explicitly taps [ ⌨️ Keyboard ]!
+                    if (bar && isTouchDevice()) bar.classList.add('visible');
+                    applyScopeChange(function() {
+                        if (client && client.clientProperties) {
+                            client.clientProperties.autoFit = true;
+                            client.clientProperties.scrollLeft = 0;
+                            client.clientProperties.scrollTop = 0;
+                        }
+                    });
                 } else {
                     if (clientView) clientView.classList.remove('terminal-session');
                     document.body.classList.remove('is-terminal-session');
-                    // Desktop (VNC/RDP):
-                    // 1) Enable Full-Screen Trackpad
-                    // 2) Revert desktop to 28% scale (0.28) so it fits without leaving the screen!
                     if (isTouchDevice()) {
                         applyScopeChange(function(scope) {
                             if (scope.menu) scope.menu.emulateAbsoluteMouse = false;
                         });
                         showToast('🖥️ Full Desktop | 🖱️ Trackpad Active');
                     }
-                    setScale(DEFAULT_FIT_SCALE);
+                    applyScopeChange(function() {
+                        if (client && client.clientProperties) {
+                            client.clientProperties.autoFit = true;
+                            client.clientProperties.scrollLeft = 0;
+                            client.clientProperties.scrollTop = 0;
+                        }
+                    });
                 }
 
                 if (client) {
@@ -1441,9 +1548,12 @@
             updatePillUI();
         });
 
-        // Sync fullscreen state changes
+        // Sync fullscreen state changes across all browser vendors and window resize
         document.addEventListener('fullscreenchange', updatePillUI);
         document.addEventListener('webkitfullscreenchange', updatePillUI);
+        document.addEventListener('mozfullscreenchange', updatePillUI);
+        document.addEventListener('MSFullscreenChange', updatePillUI);
+        window.addEventListener('resize', updatePillUI);
 
     }]);
 

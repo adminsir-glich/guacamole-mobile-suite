@@ -116,6 +116,7 @@ body.keyboard-active .text-input textarea {
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
+    transform: none !important;
 }
 
 .client-view.terminal-session div.displayMiddle {
@@ -126,6 +127,7 @@ body.keyboard-active .text-input textarea {
     padding: 0 !important;
     text-align: left !important;
     vertical-align: top !important;
+    transform: none !important;
 }
 
 .client-view.terminal-session div.display {
@@ -134,12 +136,14 @@ body.keyboard-active .text-input textarea {
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    transform-origin: 0 0 !important;
 }
 
 .client-view.terminal-session div.display canvas {
     display: block !important;
     margin: 0 !important;
     padding: 0 !important;
+    transform-origin: 0 0 !important;
 }
 
 /* =========================================================================
